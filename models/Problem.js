@@ -15,6 +15,11 @@ const Problem = sequelize.define('Problem', {
         type: DataTypes.TEXT,
         allowNull: true
     },
+    score: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 50
+    },
     input_format: {
         type: DataTypes.TEXT,
         allowNull: false
@@ -27,9 +32,9 @@ const Problem = sequelize.define('Problem', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    test_cases: {
-        type: DataTypes.JSONB,
-        allowNull: false
+    test_case_path: {
+        type: DataTypes.STRING,
+        allowNull: true
     },
     is_junior: {
         type: DataTypes.BOOLEAN,

@@ -56,7 +56,7 @@ router.post("/login", async (req, res) => {
         event_name: user.event_name,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "12h" }
     );
     res.status(200).json({ message: "User logged in successfully", token });
   } catch (error) {

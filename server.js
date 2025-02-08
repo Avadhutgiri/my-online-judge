@@ -5,9 +5,10 @@ const submissionRoutes = require('./routes/submissionRoutes')
 const authenticateToken = require('./middlewares/authMiddleware');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const webHookRoutes = require('./routes/webHookRoutes');
 const { syncDB } = require('./models');
 require('dotenv').config();
-
+    
 const app = express();
 app.use(express.json());  // To handle JSON payloads
 
@@ -34,6 +35,8 @@ app.use('/api/problems', problemRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.use('/webhook', webHookRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -1,10 +1,29 @@
 const express = require('express');
+const redisClient = require('../config/redisConfig');
+
 const { Submission, Problem } = require('../models');
 const authenticateToken = require('../middlewares/authMiddleware');
 const { User } = require('../models');
 const router = express.Router();
 
+
+async function enqueueTask(queue, data) {
+    try {
+        // Encode the code and custom testcase to Base64
+        data.code = Buffer.from(data.code).toString('base64');
+        if (data.customTestcase) {
+            data.customTestcase = Buffer.from(data.customTestcase).toString('base64');
+        }
+
+        // Push the task to Redis queue
+        await redisClient.lPush(queue, JSON.stringify(data));
+        console.log(`Task enqueued to ${queue} with submission_id: ${data.submission_id}`);
+    } catch (error) {
+        console.error(`Error enqueuing task to ${queue}:`, error);
+    }
+}
 // Submit a solution
+
 router.post('/', authenticateToken, async (req, res) => {
     try {
         const { problem_id, code, language } = req.body;
@@ -19,7 +38,6 @@ router.post('/', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Problem not found' });
         }
 
-        // Save submission in the database
         const submission = await Submission.create({
             user_id,
             problem_id,
@@ -36,7 +54,8 @@ router.post('/', authenticateToken, async (req, res) => {
             result: submission.result
         });
 
-    } catch (error) {
+    } 
+    catch (error) {
         res.status(500).json({ error: 'Error submitting code', details: error.message });
     }
 });
@@ -65,7 +84,6 @@ router.put('/:submission_id', authenticateToken, async (req, res) => {
             }
         });
 
-        // Update submission status
         submission.result = result;
         submission.execution_time = execution_time;
         submission.memory_usage = memory_usage;
@@ -90,11 +108,84 @@ router.put('/:submission_id', authenticateToken, async (req, res) => {
     }
 });
 
+router.post('/run', authenticateToken, async (req, res) => {
+    try {
+        
+        const { problem_id, code, customTestcase, language, event } = req.body;
+        const user = req.user;
+        // const problem = await Problem.findByPk(problem_id);
+        // if (!problem) {
+        //     return res.status(404).json({ error: 'Problem not found' });
+        // }
+        const runData = {
+            submission_id: `run_${Date.now()}`,
+            problem_id,
+            user_id: user.user_id,
+            code,
+            customTestcase: customTestcase || null,
+            language,
+            event,
+        };
+
+        await enqueueTask('runQueue', runData);
+
+        res.status(200).json({ message: 'Run request enqueued successfully.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to enqueue run request.' });
+    }
+});
+
+router.post('/submit', authenticateToken, async (req, res) => {
+    try {
+        const { problem_id, code, language } = req.body;
+        const user_id = req.user.id;
+
+        const problem = await Problem.findByPk(problem_id);
+        if (!problem) {
+            return res.status(404).json({ error: 'Problem not found' });
+        }
+
+        const submission = await Submission.create({
+            user_id,
+            problem_id,
+            code,
+            language,
+            result: 'Pending',
+            execution_time: 0,
+            memory_usage: 0
+        });
+
+        // console.log(code)
+
+        const inputPath = `${problem.test_case_path}`;
+
+        const SubmissionData = { 
+            submission_id: submission.id,
+            code,
+            language,
+            inputPath,
+            problem_id,
+        };
+
+        // Pass all data to the worker queue
+        await enqueueTask('submitQueue', SubmissionData);
+
+        res.json({ message: 'Code submitted successfully, waiting for evaluation.', submission_id: submission.id, result: submission.result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error submitting code', details: error.message });
+    }
+});
+
+
+
 
 router.get('/history', authenticateToken, async (req, res) => {
     try{
+        const user_id = req.user.id;
         const submissions = await Submission.findAll({
-            where: { user_id: req.user.id },
+            where: { user_id },
             include: [{ model: Problem, attributes:['title'] }],
             order: [['submitted_at', 'DESC']] 
         });

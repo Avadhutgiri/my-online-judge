@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const adminAuthenticate = (req, res, next) => {
-    const authHeader = req.authHeader("Authorization");
+    const authHeader = req.header("Authorization");
 
     if (!authHeader) {
         return res.status(400).json({ error: "Missing token" });
