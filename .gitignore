@@ -7,3 +7,5 @@ submissions/
 Dummy.js
 a.py
 test.py
+workers/__pycache__/
+workers/try.py
