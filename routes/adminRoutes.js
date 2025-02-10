@@ -12,17 +12,15 @@ const upload = multer({
   storage: multer.diskStorage({
       destination: (req, file, cb) => {
           const { problem_id } = req.body;
-          const destinationPath = path.join(__dirname, '../problems', `problem_${problem_id}`);
+          const destinationPath = path.join(__dirname, '../problems', `${problem_id}`);
           
           // Create the directory if it doesn't exist
           if (!fs.existsSync(destinationPath)) {
               fs.mkdirSync(destinationPath, { recursive: true });
-              fs.mkdirSync(path.join(destinationPath, 'inputs'));
-              fs.mkdirSync(path.join(destinationPath, 'outputs'));
           }
 
           // Save all uploaded files in the 'inputs' directory
-          cb(null, path.join(destinationPath, 'inputs'));
+          cb(null, destinationPath);
       },
       filename: (req, file, cb) => {
           cb(null, file.originalname);
@@ -50,7 +48,9 @@ router.post("/problems", adminAuthenticate, async (req, res) => {
       is_junior,
       event_name,
       time_limit,
-      memory_limit
+      memory_limit,
+      sample_input,       // New field
+      sample_output       // New field
     } = req.body;
 
     // Validate the required fields
@@ -70,7 +70,9 @@ router.post("/problems", adminAuthenticate, async (req, res) => {
       is_junior,
       event_name,
       time_limit,
-      memory_limit
+      memory_limit,
+      sample_input,      // Store sample input
+      sample_output      // Store sample output
     });
 
     res.status(201).json({
@@ -100,7 +102,7 @@ router.post('/upload-testcases', adminAuthenticate, upload.array('files'), async
     }
 
     // Update test case path in the database
-    problem.test_case_path = `/problems/problem_${problem_id}/`;
+    problem.test_case_path = `problems/${problem_id}/`;
     await problem.save();
 
     res.json({ message: 'Test cases uploaded successfully!' });
@@ -109,6 +111,8 @@ router.post('/upload-testcases', adminAuthenticate, upload.array('files'), async
     res.status(500).json({ error: 'Error uploading test cases', details: error.message });
   }
 });
+
+
 router.post("/register-admin", async (req, res) => {
   try {
     const { username, email, password } = req.body;

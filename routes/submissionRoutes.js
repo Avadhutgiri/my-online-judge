@@ -29,7 +29,7 @@ router.post('/', authenticateToken, async (req, res) => {
         const { problem_id, code, language } = req.body;
         const user_id = req.user.id;  // Get logged-in user ID from token
 
-        if(!user_id){
+        if (!user_id) {
             return res.status(403).json({ error: 'Unauthorized' });
         }
         // Check if problem exists
@@ -54,7 +54,7 @@ router.post('/', authenticateToken, async (req, res) => {
             result: submission.result
         });
 
-    } 
+    }
     catch (error) {
         res.status(500).json({ error: 'Error submitting code', details: error.message });
     }
@@ -90,7 +90,7 @@ router.put('/:submission_id', authenticateToken, async (req, res) => {
         await submission.save();
 
         const user = await User.findByPk(submission.user_id);
-        
+
         if (result === 'Accepted') {
             if (!existingCorrectSubmission) {
                 user.correct_submission += 1;
@@ -110,13 +110,20 @@ router.put('/:submission_id', authenticateToken, async (req, res) => {
 
 router.post('/run', authenticateToken, async (req, res) => {
     try {
-        
+
         const { problem_id, code, customTestcase, language, event } = req.body;
         const user = req.user;
-        // const problem = await Problem.findByPk(problem_id);
-        // if (!problem) {
-        //     return res.status(404).json({ error: 'Problem not found' });
-        // }
+        const problem = await Problem.findByPk(problem_id);
+        if (!problem) {
+            return res.status(404).json({ error: 'Problem not found' });
+        }
+        
+        if (req.user.event_name !== problem.event_name) {
+            return res.status(403).json({
+                error: 'You are not authorized to submit a solution for this problem.',
+                details: `Expected event: ${req.user.event_name}, Problem event: ${problem.event_name}`
+            });
+        }
         const runData = {
             submission_id: `run_${Date.now()}`,
             problem_id,
@@ -146,6 +153,12 @@ router.post('/submit', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Problem not found' });
         }
 
+        if (req.user.event_name !== problem.event_name) {
+            return res.status(403).json({
+                error: 'You are not authorized to submit a solution for this problem.',
+                details: `Expected event: ${req.user.event_name}, Problem event: ${problem.event_name}`
+            });
+        }
         const submission = await Submission.create({
             user_id,
             problem_id,
@@ -160,7 +173,7 @@ router.post('/submit', authenticateToken, async (req, res) => {
 
         const inputPath = `${problem.test_case_path}`;
 
-        const SubmissionData = { 
+        const SubmissionData = {
             submission_id: submission.id,
             code,
             language,
@@ -182,16 +195,16 @@ router.post('/submit', authenticateToken, async (req, res) => {
 
 
 router.get('/history', authenticateToken, async (req, res) => {
-    try{
+    try {
         const user_id = req.user.id;
         const submissions = await Submission.findAll({
             where: { user_id },
-            include: [{ model: Problem, attributes:['title'] }],
-            order: [['submitted_at', 'DESC']] 
+            include: [{ model: Problem, attributes: ['title'] }],
+            order: [['submitted_at', 'DESC']]
         });
-        res.json(submissions);        
+        res.json(submissions);
     }
-    catch (error){
+    catch (error) {
         res.status(500).json({ error: 'Error fetching submission history', details: error.message });
     }
 })

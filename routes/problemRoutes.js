@@ -35,7 +35,9 @@ router.get("/testcases/:problem_id", async (req, res) => {
       return res.status(404).json({ error: "Problem or test cases not found" });
     }
 
-    const testCaseDir = path.join(__dirname, `..${problem.test_case_path}`);
+    const testCaseDir = path.join(__dirname, "../", problem.test_case_path);
+    console.log(__dirname);
+    console.log(testCaseDir);
     const files = fs.readdirSync(testCaseDir);
 
     const inputs = files.filter((file) => file.startsWith("input"));

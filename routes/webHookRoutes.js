@@ -41,7 +41,12 @@ async function updateDatabase(submissionId, updateData) {
                 user.score += problem.score;
                 user.correct_submission += 1;
             }
-        } else {
+            if (!user.first_solve_time) {
+                user.first_solve_time = new Date();
+            }
+
+        } 
+        else {
             user.wrong_submission += 1;
         }
 

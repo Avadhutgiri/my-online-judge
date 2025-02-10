@@ -22,14 +22,22 @@ const Problem = sequelize.define('Problem', {
     },
     input_format: {
         type: DataTypes.TEXT,
-        allowNull: false
+        allowNull: true
     },
     output_format: {
         type: DataTypes.TEXT,
-        allowNull: false
+        allowNull: true
     },
     constraints: {
         type: DataTypes.TEXT,
+        allowNull: true
+    },
+    sample_input: {
+        type: DataTypes.TEXT,       // New Field: Store sample input as text
+        allowNull: true
+    },
+    sample_output: {
+        type: DataTypes.TEXT,       // New Field: Store sample output as text
         allowNull: true
     },
     test_case_path: {

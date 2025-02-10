@@ -6,7 +6,6 @@ require("dotenv").config();
 
 const router = express.Router();
 const authenticateToken = require("../middlewares/authMiddleware");
-
 router.post('/register', async (req, res) => {
     try {
         console.log(req.body); // Debug incoming request body
@@ -16,8 +15,13 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Password must be a string' });
         }
 
+        const checkUser = await User.findOne({ where: { username, is_junior, event_name } });
+        if (checkUser) {
+          return res.status(400).json({ error: 'User already exists' });
+        }
         const hashedPassword = await bcrypt.hash(password, 10);
-
+        
+        console.log("Before creating user", username, email, hashedPassword, is_junior, event_name);
         const newUser = await User.create({
             username,
             email,
@@ -25,6 +29,8 @@ router.post('/register', async (req, res) => {
             is_junior,
             event_name
         });
+
+        console.log("After creating user", newUser);
 
         res.status(201).json({ message: 'User registered successfully!', user: newUser.username });
     } catch (error) {

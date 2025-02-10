@@ -34,7 +34,7 @@ const Submission = sequelize.define('Submission', {
         allowNull: false
     },
     result: {
-        type: DataTypes.ENUM('Pending', 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded'),
+        type: DataTypes.ENUM('failed','Pending', 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded'),
         allowNull: false,
         defaultValue: 'Pending'
     },

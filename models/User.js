@@ -10,7 +10,7 @@ const User = sequelize.define('User', {
     username: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        // unique: true
     },
     password: {
         type: DataTypes.STRING,
@@ -22,7 +22,7 @@ const User = sequelize.define('User', {
     email: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
+        // unique: true,
         validate: {
             isEmail: true
         }
@@ -31,6 +31,11 @@ const User = sequelize.define('User', {
         type: DataTypes.ENUM('user', 'admin'),  // Default roles
         defaultValue: 'user'
     },
+    first_solve_time: {
+        type: DataTypes.DATE,
+        allowNull: true
+    }
+    ,
     score: {
         type: DataTypes.INTEGER,
         defaultValue: 0
@@ -56,7 +61,17 @@ const User = sequelize.define('User', {
         allowNull: false
     }
 }, {
-    timestamps: false
+    timestamps: false,
+    indexes: [
+        {
+            unique: true,
+            fields: ['username', 'event_name']
+        },
+        {
+            unique: true,
+            fields: ['email', 'event_name']
+        }
+    ]
 });
 
 module.exports = User;

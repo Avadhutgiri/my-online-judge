@@ -10,12 +10,19 @@ REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 RUN_QUEUE = 'runQueue'
 SUBMIT_QUEUE = 'submitQueue'
-WEBHOOK_URL_RUN = 'http://localhost:5000/webhook/run'      # Change these URLs based on your server setup
+# Change these URLs based on your server setup
+WEBHOOK_URL_RUN = 'http://localhost:5000/webhook/run'
 WEBHOOK_URL_SUBMIT = 'http://localhost:5000/webhook/submit'
 
 # Configure Celery and Redis
 app = Celery('tasks', broker='redis://localhost:6379/0')
 redis_client = Redis(host='localhost', port=6379, db=0)
+
+
+def store_run_result(submission_id, result):
+    """Store the run result temporarily in Redis for 10 minutes."""
+    redis_client.setex(f"run_result:{submission_id}", 10, json.dumps(
+        result))  # Expires after 10 minutes
 
 
 # Helper functions
@@ -53,10 +60,10 @@ def process(queue):
 
         if task['code']:
             task['code'] = decode(task['code'])
-        
+
         if task.get('customTestcase'):
             task['customTestcase'] = decode(task['customTestcase'])
-            
+
         print(task['problem_id'])
         # Execution logic for runQueue
         if queue == 'runQueue':
@@ -69,16 +76,28 @@ def process(queue):
                 event_name=task.get('event', 'Clash')
             )
 
+            store_run_result(task['submission_id'], {
+                'status': result.get('status', 'failed'),
+                'message': result.get('message') or None,
+                'user_output': result.get('user_output') or None,
+                'expected_output': result.get('expected_output')
+            })
+
             # Prepare webhook data for run request
             webhook_data = {
                 'submission_id': task['submission_id'],
                 'status': result.get('status', 'failed'),
-                'message': result.get('message') or None,               # Optional error message
-                'user_output': result.get('user_output') or None,        # Output of user's code
-                'expected_output': result.get('expected_output') # Expected output for Reverse Coding
+                # Optional error message
+                'message': result.get('message') or None,
+                # Output of user's code
+                'user_output': result.get('user_output') or None,
+                # Expected output for Reverse Coding
+                'expected_output': result.get('expected_output')
             }
 
             send_webhook_result(WEBHOOK_URL_RUN, webhook_data)
+            
+            print()
 
         # Execution logic for submitQueue
         else:
@@ -94,8 +113,10 @@ def process(queue):
             webhook_data = {
                 'submission_id': task['submission_id'],
                 'status': result.get('status'),
-                'message': result.get('message') or None,               # Error or success message
-                'failed_test_case': result.get('failed_test_case') or None  # Optional for failed test cases
+                # Error or success message
+                'message': result.get('message') or None,
+                # Optional for failed test cases
+                'failed_test_case': result.get('failed_test_case') or None
             }
 
             send_webhook_result(WEBHOOK_URL_SUBMIT, webhook_data)
