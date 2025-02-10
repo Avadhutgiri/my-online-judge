@@ -4,3 +4,6 @@ node_modules/
 testcases/
 submissions/
 .DS_Store
+Dummy.js
+a.py
+test.py
