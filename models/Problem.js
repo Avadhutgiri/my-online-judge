@@ -32,14 +32,6 @@ const Problem = sequelize.define('Problem', {
         type: DataTypes.TEXT,
         allowNull: true
     },
-    sample_input: {
-        type: DataTypes.TEXT,       // New Field: Store sample input as text
-        allowNull: true
-    },
-    sample_output: {
-        type: DataTypes.TEXT,       // New Field: Store sample output as text
-        allowNull: true
-    },
     test_case_path: {
         type: DataTypes.STRING,
         allowNull: true

@@ -1,50 +1,30 @@
 import base64
 
 code = """
-#include <iostream>
-#include <cmath>
-using namespace std;
+    #include <bits/stdc++.h>
+    using namespace std;
 
-long long convertToTernary(long long N)
-{
-    if (N == 0)
-        return 0;
+    int main() {
+        int t;
+        cin>>t;
+        while(t--){
 
-    long long quotient = N / 3;
-    long long remainder = abs(N % 3);
-    long long result = convertToTernary(quotient);
+        string s;
+        cin >> s;
 
-    return result * 10 + remainder;
-}
+        vector<char> vec = {'A', 'E', 'I', 'O', 'U'};
+        vector<char>::iterator it;
 
-long long convert(long long Decimal)
-{
-    if (Decimal != 0) {
-        return convertToTernary(Decimal);
+        int count = 0;
+        for(char i: s) {
+            it = find(vec.begin(), vec.end(), i);
+            if(it != vec.end()) {
+                count++;
+            }
+        }
+        cout << count << endl;
+        };
     }
-    else {
-        return 0;
-    }
-}
-
-int main() {
-    long t;
-    cin >> t;
-    while(t--) {
-        long n;
-        long r = 0;
-        cin >> n;
-
-        long t = convert(n);
-
-        while (t != 0) {
-            r += (t % 10);
-            t /= 10
-
-        cout << r << endl;
-    }
-    return 0;
-}
 """
 
 code= base64.b64encode(code.encode('utf-8')).decode('utf-8')
