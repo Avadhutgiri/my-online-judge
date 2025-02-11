@@ -2,7 +2,7 @@ const fs = require('fs');
 const { User, Submission } = require('../models');
 const { Problem, ProblemSample } = require('../models');
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
 
 
