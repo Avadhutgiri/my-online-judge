@@ -45,21 +45,19 @@ LANGUAGE_CONFIG = {
 
 # Helper functions
 def prepare_submission_directory(submission_id):
-    work_dir = os.path.join(os.getcwd(), "submissions",
-                            f"submission_{submission_id}")
+    base_submissions_path = "/app/submissions"
+    work_dir = os.path.join(base_submissions_path, f"submission_{submission_id}")
     os.makedirs(work_dir, exist_ok=True)
     os.makedirs(os.path.join(work_dir, "inputs"), exist_ok=True)
     os.makedirs(os.path.join(work_dir, "outputs"), exist_ok=True)
     os.makedirs(os.path.join(work_dir, "expected_outputs"), exist_ok=True)
     return work_dir
 
-
 def cleanup_submission_directory(submission_id):
-    work_dir = os.path.join(os.getcwd(), "submissions",
-                            f"submission_{submission_id}")
+    base_submissions_path = "/app/submissions"
+    work_dir = os.path.join(base_submissions_path, f"submission_{submission_id}")
     if os.path.exists(work_dir):
         shutil.rmtree(work_dir)
-
 
 def validate_and_configure(language):
     if language not in LANGUAGE_CONFIG:
@@ -69,60 +67,82 @@ def validate_and_configure(language):
 
 def extract_java_classname(code):
     """Extracts the public class name from Java code."""
-    match = re.search(r"public\s+class\s+(\w+)", code)
+    match = re.findall(r"public\s+class\s+(\w+)", code)
+    classname = match[0] if match else None
     if match:
-        return match.group(1)
+        return classname
     else:
         raise ValueError("No public class found in Java code.")
 
 
-def compile_code(work_dir, filename, exec_name, language):
+def compile_code(work_dir, filename, exec_name, language, image):
     if language not in ["cpp", "java"]:
         return {"status": "success"}
 
     config = LANGUAGE_CONFIG[language]
-    compile_cmd = config["compile_cmd"].format(
-        exec_name=exec_name, filename=filename)
+    compile_cmd = config["compile_cmd"].format(exec_name=exec_name, filename=filename)
+    file_path = os.path.join(work_dir, filename)
+    if not os.path.exists(file_path):
+        return {"status": "compilation_error", "message": f"File {filename} not found in {work_dir}"}
+
+    docker_cmd = [
+        "docker", "run", "--rm",
+        "-v", f"{work_dir}:/sandbox:z",
+        "-w", "/sandbox",
+        image,
+        "sh", "-c", compile_cmd
+    ]
+    print(f"Running Docker command: {' '.join(docker_cmd)}")
+    logging.info(f"Compiling with Docker: {' '.join(docker_cmd)}")
+
     try:
-        subprocess.run(
-            compile_cmd, shell=True, check=True,
-            cwd=work_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        )
+        result = subprocess.run(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+        
+        if(result.returncode != 0):
+            return {"status": "compilation_error", "message": result.stderr.decode()}
+        
         return {"status": "success"}
-    except subprocess.CalledProcessError as e:
-        return {"status": "compilation_error", "message": e.stderr.decode()}
+    except subprocess.TimeoutExpired:
+        return {"status": "Time Limit Exceeded", "message": "Compilation timeout"}
+    except Exception as e:
+        return {"status": "failed", "message": str(e)}
 
-
-def execute_code_in_docker(
-    work_dir, run_cmd, input_file, output_file, image, timeout, memory_limit
-):
+def execute_code_in_docker(work_dir, run_cmd, input_file, output_file, image, timeout, memory_limit):
     input_file_rel = os.path.relpath(input_file, work_dir)
     output_file_rel = os.path.relpath(output_file, work_dir)
-    # print(input_file_rel, output_file_rel)
+    print(input_file_rel, output_file_rel)
     docker_cmd = [
-        "docker", "run", "--rm", "-v", f"--memory={memory_limit}m", "--cpus=1",
-        "-v", f"{work_dir}:/app:z", "-w", "/app", image, "sh", "-ec",
-        f"timeout {timeout}s {run_cmd} < {input_file_rel} > {output_file_rel} 2>&1",
+        "docker", "run", "--rm",
+        "--memory", f"{memory_limit}m", "--memory-swap", f"{memory_limit}m",  # Prevent memory abuse
+        "--cpus", "1",  # Restrict CPU usage
+        "--pids-limit", "10",  # Prevent fork bombs
+        "--security-opt", "no-new-privileges",  # Prevent privilege escalation
+        "--read-only",  # Prevent file system modifications
+        "--network", "none",  # Disable networking
+        "-v", f"{work_dir}:/sandbox:z", "-w", "/sandbox",
+        image,
+        "sh", "-ec", f"timeout {timeout}s {run_cmd} < {input_file_rel} > {output_file_rel} 2>&1"
     ]
+
 
     logging.info(f"Executing Docker command: {' '.join(docker_cmd)}")
     try:
         result = subprocess.run(docker_cmd, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, timeout=timeout, shell=False)
 
+        if result.returncode == 124:
+            return {"status": "Time Limit Exceeded", "message": "Execution timeout"}
         if result.returncode == 137:
-            return {
-                "status": "memory_limit_exceeded",
-                "message": "Memory Limit Exceeded",
-            }
-        if result.stderr.decode().strip():
-            return {
-                "status": "Runtime Error",
-                "message": result.stderr.decode().strip(),
-            }
+            return {"status": "Memory Limit Exceeded", "message": "Process was killed due to memory usage."}
+        if result.returncode != 0:
+            return {"status": "Runtime Error", "message": result.stderr.decode().strip()}
+
         return {"status": "success"}
     except subprocess.TimeoutExpired:
         return {"status": "Time Limit Exceeded", "message": "Time Limit Exceeded"}
+    except Exception as e:
+        logging.error(f"Execution failed: {e}")
+        return {"status": "failed", "message": str(e)}
 
 
 def prepare_inputs_and_outputs(input_path, work_dir):
@@ -190,9 +210,9 @@ def execute_reference_solution(ref_solution_path, work_dir, input_file):
         "run",
         "--rm",
         "-v",
-        f"{work_dir}:/app:z",
+        f"{work_dir}:/sandbox:z",
         "-w",
-        "/app",
+        "/sandbox",
         "gcc:latest",
         "sh",
         "-c",
@@ -230,8 +250,7 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
 
         input_file = os.path.join(work_dir, "inputs", "custom_input.txt")
         if inputData is None:
-            sample_input_path = os.path.join(
-                "problems", problem_id, "sample.txt")
+            sample_input_path = os.path.join("problems", problem_id, "sample.txt")
             if not os.path.exists(sample_input_path):
                 return {"status": "failed", "user_output": "Sample input file not found."}
 
@@ -250,8 +269,7 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
                 "User code is empty; returning only expected output for Reverse Coding.")
             ref_path = os.path.join("problems", problem_id, "solution.cpp")
             logging.info(f"Executing reference solution: {ref_path}")
-            expected_output = execute_reference_solution(
-                ref_path, work_dir, input_file)
+            expected_output = execute_reference_solution(ref_path, work_dir, input_file)
             return {
                 "expected_output": expected_output
             }
@@ -277,7 +295,7 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
             f.write(code)
 
         logging.info("Compiling user code if necessary")
-        compile_result = compile_code(work_dir, filename, exec_name, language)
+        compile_result = compile_code(work_dir, filename, exec_name, language, config["image"])
         if compile_result["status"] != "success":
             logging.warning("User code compilation failed.")
             expected_output = None
@@ -285,8 +303,7 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
                 ref_path = os.path.join("problems", problem_id, "solution.cpp")
                 logging.info(f"Executing reference solution: {ref_path}")
                 print(ref_path, work_dir, input_file)
-                expected_output = execute_reference_solution(
-                    ref_path, work_dir, input_file)
+                expected_output = execute_reference_solution(ref_path, work_dir, input_file)
             return {
                 "status": "Compilation Error",
                 "user_output": compile_result.get("message", "Compilation failed."),
@@ -334,8 +351,7 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
 
         # Return results based on the event type
         if event_name == "Reverse Coding":
-            expected_output = execute_reference_solution(os.path.join(
-                "problems", problem_id, "solution.cpp"), work_dir, input_file)
+            expected_output = execute_reference_solution(os.path.join("problems", problem_id, "solution.cpp"), work_dir, input_file)
             return {
                 "status": "executed_successfully",
                 "user_output": user_output,
@@ -349,9 +365,9 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
         logging.error(f"An error occurred during execution: {e}")
         return {"status": "failed", "user_output": str(e)}
 
-    finally:
-        logging.info("Cleaning up submission directory")
-        cleanup_submission_directory(submission_id)
+    # finally:
+    #     logging.info("Cleaning up submission directory")
+    #     cleanup_submission_directory(submission_id)
 
 
 # Submit function
@@ -380,6 +396,7 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
             if not classname:
                 result.update(
                     {"status": "failed", "message": "No public class found in Java code."})
+                return result
             filename = f"{classname}.java"
         else:
             filename = f"submission_{submission_id}{config['extension']}"
@@ -387,11 +404,16 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
         exec_name = f"submission_{submission_id}_exec"
         with open(os.path.join(work_dir, filename), "w") as f:
             f.write(code)
+        if not os.path.exists(os.path.join(work_dir, filename)):
+            return {"status": "failed", "message": f"Submission file {filename} was not created."}
+        logging.info(f"File {filename} successfully created in {work_dir}")
 
-        compile_result = compile_code(work_dir, filename, exec_name, language)
+
+        compile_result = compile_code(work_dir, filename, exec_name, language, config["image"])
         if compile_result["status"] != "success":
             result.update({"status": "compilation_error", "message": compile_result.get("message", "Compilation failed.")})
-
+            return result
+        
         (test_case_paths, expected_output_paths), error = prepare_inputs_and_outputs(
             input_path, work_dir
         )
@@ -446,5 +468,7 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
         result.update({"status": "failed", "message": str(e)})
         return result
 
-    finally:
-        cleanup_submission_directory(submission_id)
+    # finally:
+    #     cleanup_submission_directory(submission_id)
+
+# this is mine
