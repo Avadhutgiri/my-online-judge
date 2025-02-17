@@ -3,7 +3,7 @@ const { User, Problem, Submission } = require('../models');
 exports.getResult = async (req, res) => {
     try {
         const user_id = req.user.id;
-
+        console.log(req.user);
         // Fetch user details
         const user = await User.findByPk(user_id, {
             attributes: ['username', 'score', 'correct_submission', 'wrong_submission', 'is_junior', 'event_name']

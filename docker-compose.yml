@@ -69,6 +69,9 @@ services:
         condition: service_healthy
     volumes:
       - ./workers:/app/workers:z
+      - ./problems:/app/problems:z
+      - ./submissions:/app/submissions:z
+      - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app
     command: celery -A workers.tasks worker --loglevel=${LOG_LEVEL} --concurrency=${WORKER_CONCURRENCY}
     environment:

@@ -8,8 +8,10 @@ import os
 
 # Environment Variables
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+# REDIS_HOST = 'localhost'
 REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
 BACKEND_HOST = os.getenv('BACKEND_HOST', 'backend')
+# BACKEND_HOST = 'localhost'
 BACKEND_PORT = os.getenv('BACKEND_PORT', 5000)
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'redis://{REDIS_HOST}:{REDIS_PORT}/0')
