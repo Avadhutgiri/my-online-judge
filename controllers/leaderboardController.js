@@ -69,9 +69,9 @@ exports.getLeaderboard = async (req, res) => {
         // Send both problem details and ranked users
         res.json({
             event_name,
-            problems,                 // Array of problems with id, title, and score
-            problem_columns: problemColumns,  // Dynamic columns like q1, q2, etc.
-            users: rankedUsers        // Leaderboard users with rank and scores
+            problems,                 
+            problem_columns: problemColumns,  
+            users: rankedUsers        
         });
     } catch (error) {
         console.error('Error fetching leaderboard:', error);

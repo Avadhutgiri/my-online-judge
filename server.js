@@ -9,11 +9,12 @@ const webHookRoutes = require('./routes/webHookRoutes');
 const pollingRoutes = require('./routes/pollingRoutes');
 const resultRoutes = require('./routes/resultRoutes');
 const { syncDB } = require('./models');
+// const cookieParser = require('cookie-parser');
 require('dotenv').config();
     
 const app = express();
 app.use(express.json());  // To handle JSON payloads
-
+// app.use(cookieParser())
 const PORT = process.env.PORT || 5000;
 
 // Sync database at server start (optional)

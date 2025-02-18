@@ -26,6 +26,7 @@ exports.registerUser = async (req, res) => {
             event_name
         });
 
+        console.log("Just clicked the login button");
 
         res.status(201).json({ message: 'User registered successfully!', user: newUser.username });
     } catch (error) {
@@ -59,6 +60,8 @@ exports.loginUser = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: "12h" }
         );
+        console.log("Just clicked the login button");
+
         res.status(200).json({ message: "User logged in successfully", token });
     } catch (error) {
         res

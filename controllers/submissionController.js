@@ -71,14 +71,17 @@ exports.RunProblem = async (req, res) => {
             return res.status(404).json({ error: 'Problem not found' });
         }
 
+
         if (req.user.event_name !== problem.event_name) {
             return res.status(403).json({
                 error: 'You are not authorized to submit a solution for this problem.',
                 details: `Expected event: ${req.user.event_name}, Problem event: ${problem.event_name}`
             });
         }
+        const submission_id= `run_${Date.now()}`;
+
         const runData = {
-            submission_id: `run_${Date.now()}`,
+            submission_id: submission_id,
             problem_id,
             user_id: user.user_id,
             code,
@@ -87,9 +90,10 @@ exports.RunProblem = async (req, res) => {
             event,
         };
 
+
         await enqueueTask('runQueue', runData);
 
-        res.status(200).json({ message: 'Run request enqueued successfully.' });
+        res.status(200).json({ message: `Run request enqueued successfully. Submission_id: ${submission_id}` });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to enqueue run request.' });

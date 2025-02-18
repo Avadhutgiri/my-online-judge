@@ -14,7 +14,8 @@ logging.basicConfig(
 def decode(encoded_str):
     return base64.b64decode(encoded_str).decode('utf-8')
 
-base_dir="/home/thefallenone/online-judge-backend/"
+
+base_dir = "/home/thefallenone/online-judge-backend/"
 
 # Language configuration
 LANGUAGE_CONFIG = {
@@ -46,7 +47,8 @@ LANGUAGE_CONFIG = {
 
 # Helper functions
 def prepare_submission_directory(submission_id):
-    work_dir = os.path.join(os.getcwd(), "submissions",f"submission_{submission_id}")
+    work_dir = os.path.join(os.getcwd(), "submissions",
+                            f"submission_{submission_id}")
     os.makedirs(work_dir, exist_ok=True)
     os.makedirs(os.path.join(work_dir, "inputs"), exist_ok=True)
     os.makedirs(os.path.join(work_dir, "outputs"), exist_ok=True)
@@ -55,7 +57,8 @@ def prepare_submission_directory(submission_id):
 
 
 def cleanup_submission_directory(submission_id):
-    work_dir = os.path.join(os.getcwd(), "submissions",f"submission_{submission_id}")
+    work_dir = os.path.join(os.getcwd(), "submissions",
+                            f"submission_{submission_id}")
     if os.path.exists(work_dir):
         shutil.rmtree(work_dir)
 
@@ -80,31 +83,32 @@ def compile_code(work_dir, filename, exec_name, language):
         return {"status": "success"}
 
     config = LANGUAGE_CONFIG[language]
-    compile_cmd = config["compile_cmd"].format(exec_name=exec_name, filename=filename)
+    compile_cmd = config["compile_cmd"].format(
+        exec_name=exec_name, filename=filename)
     try:
-        subprocess.run(compile_cmd, shell=True, check=True,cwd=work_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
+        subprocess.run(compile_cmd, shell=True, check=True, cwd=work_dir,
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         return {"status": "success"}
     except subprocess.CalledProcessError as e:
         return {"status": "compilation_error", "message": e.stderr.decode()}
 
 
-def execute_code_in_docker(submission_id,work_dir, run_cmd, input_file, output_file, image, timeout, memory_limit):
-    input_file_rel = os.path.relpath(input_file,work_dir)
-    output_file_rel = os.path.relpath(output_file,work_dir)
-    # work_dir = "/home/thefallenone/online-judge-backend/submissions/submission_" + str(submission_id)   
-    work_dir= os.path.join(base_dir, "submissions", f"submission_{submission_id}")
+def execute_code_in_docker(submission_id, work_dir, run_cmd, input_file, output_file, image, timeout, memory_limit):
+    input_file_rel = os.path.relpath(input_file, work_dir)
+    output_file_rel = os.path.relpath(output_file, work_dir)
+    work_dir = os.path.join(base_dir, "submissions",
+                            f"submission_{submission_id}")
     docker_cmd = [
-    "docker", "run", "--rm",
-    f"--memory={memory_limit}m", "--cpus=1",
-    "-v", f"{work_dir}:/app", "-w", "/app", image, "sh", "-c",
-    f"({run_cmd} < {input_file_rel} > {output_file_rel} 2>&1);"
-]
-
-
+        "docker", "run", "--rm",
+        f"--memory={memory_limit}m", "--cpus=1",
+        "-v", f"{work_dir}:/app", "-w", "/app", image, "sh", "-c",
+        f"({run_cmd} < {input_file_rel} > {output_file_rel} 2>&1);"
+    ]
 
     logging.info(f"Executing Docker command: {' '.join(docker_cmd)}")
     try:
-        result = subprocess.run(docker_cmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE, timeout=timeout, shell=False)
+        result = subprocess.run(docker_cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, timeout=timeout, shell=False)
 
         if result.returncode == 137:
             return {
@@ -159,11 +163,13 @@ def execute_reference_solution(problemid, submission_id, work_dir, input_file):
             problemid = str(problemid)
 
         input_file_relative = os.path.relpath(input_file, work_dir)
-        work_dir = f"/app/submissions/submission_{submission_id}"        
-        ref_solution_path = os.path.join("/app/problems", problemid, "solution.cpp")
-        
+        work_dir = f"/app/submissions/submission_{submission_id}"
+        ref_solution_path = os.path.join(
+            "/app/problems", problemid, "solution.cpp")
+
         if not os.path.exists(ref_solution_path):
-            logging.error(f"Reference solution file not found: {ref_solution_path}")
+            logging.error(
+                f"Reference solution file not found: {ref_solution_path}")
             return "[Error] Reference solution not found"
 
         solution_file = os.path.join(work_dir, "solution.cpp")
@@ -171,7 +177,8 @@ def execute_reference_solution(problemid, submission_id, work_dir, input_file):
 
         # Compile the reference solution inside the working directory
         compile_cmd = "g++ -o solution_exec solution.cpp"
-        logging.info(f"Compiling reference solution with command: {compile_cmd}")
+        logging.info(
+            f"Compiling reference solution with command: {compile_cmd}")
 
         compile_result = subprocess.run(
             compile_cmd,
@@ -182,15 +189,17 @@ def execute_reference_solution(problemid, submission_id, work_dir, input_file):
         )
 
         if compile_result.returncode != 0:
-            logging.error(f"Compilation failed. Error: {compile_result.stderr.decode()}")
+            logging.error(
+                f"Compilation failed. Error: {compile_result.stderr.decode()}")
             return f"[Compilation Error] {compile_result.stderr.decode().strip()}"
-        # work_dir = "/home/thefallenone/online-judge-backend/submissions/submission_" + str(submission_id) 
-        work_dir = os.path.join(base_dir, "submissions", f"submission_{submission_id}")  
+        # work_dir = "/home/thefallenone/online-judge-backend/submissions/submission_" + str(submission_id)
+        work_dir = os.path.join(base_dir, "submissions",
+                                f"submission_{submission_id}")
         logging.info("Compilation successful.")
         logging.info(f"Input file relative path: {input_file_relative}")
         # Run the compiled executable inside Docker
         docker_cmd = [
-            "docker","run","--rm","-v",
+            "docker", "run", "--rm", "-v",
             f"{work_dir}:/app",
             "-w",
             "/app",
@@ -200,22 +209,26 @@ def execute_reference_solution(problemid, submission_id, work_dir, input_file):
             f"./solution_exec < {input_file_relative}",
         ]
 
-        logging.info(f"Executing reference solution with Docker: {' '.join(docker_cmd)}")
+        logging.info(
+            f"Executing reference solution with Docker: {' '.join(docker_cmd)}")
 
         result = subprocess.run(
             docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 
         if result.returncode != 0:
-            logging.error(f"Reference solution execution failed. Error: {result.stderr.decode()}")
+            logging.error(
+                f"Reference solution execution failed. Error: {result.stderr.decode()}")
             return f"[Runtime Error] {result.stderr.decode().strip()}"
 
         # Return the solution's output
-        logging.info(f"Reference solution executed successfully. Output: {result.stdout.decode().strip()}")
+        logging.info(
+            f"Reference solution executed successfully. Output: {result.stdout.decode().strip()}")
         return result.stdout.decode().strip()
 
     except Exception as e:
-        logging.error(f"Unexpected error in execute_reference_solution: {str(e)}")
+        logging.error(
+            f"Unexpected error in execute_reference_solution: {str(e)}")
         return f"[Unexpected Error] {str(e)}"
 
 
@@ -227,7 +240,8 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
         if not isinstance(problem_id, str):
             problem_id = str(problem_id)
 
-        logging.info(f"Starting Run for Submission ID: {submission_id}, Event: {event_name}")
+        logging.info(
+            f"Starting Run for Submission ID: {submission_id}, Event: {event_name}")
 
         # Prepare the submission directory
         work_dir = prepare_submission_directory(submission_id)
@@ -235,7 +249,8 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
 
         input_file = os.path.join(work_dir, "inputs", "custom_input.txt")
         if inputData is None:
-            sample_input_path = os.path.join("problems", problem_id, "sample.txt")
+            sample_input_path = os.path.join(
+                "problems", problem_id, "sample.txt")
             if not os.path.exists(sample_input_path):
                 return {"status": "failed", "user_output": "Sample input file not found."}
 
@@ -254,10 +269,9 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
                 "User code is empty; returning only expected output for Reverse Coding.")
             ref_path = os.path.join("problems", problem_id, "solution.cpp")
             logging.info(f"Executing reference solution: {ref_path}")
-            expected_output = execute_reference_solution(problem_id,submission_id, work_dir, input_file)
-            return {
-                "expected_output": expected_output
-            }
+            expected_output = execute_reference_solution(
+                problem_id, submission_id, work_dir, input_file)
+            return {"expected_output": expected_output}
 
         config, error = validate_and_configure(language)
         if error:
@@ -288,12 +302,9 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
                 ref_path = os.path.join("problems", problem_id, "solution.cpp")
                 logging.info(f"Executing reference solution: {ref_path}")
                 print(ref_path, work_dir, input_file)
-                expected_output = execute_reference_solution( problem_id, submission_id, work_dir, input_file)
-            return {
-                "status": "Compilation Error",
-                "user_output": compile_result.get("message", "Compilation failed."),
-                "expected_output": expected_output
-            }
+                expected_output = execute_reference_solution(
+                    problem_id, submission_id, work_dir, input_file)
+            return {"status": "Compilation Error", "user_output": compile_result.get("message", "Compilation failed."), "expected_output": expected_output}
         logging.info("Compilation Successfull")
 
         output_file = os.path.join(work_dir, "outputs", "custom_output.txt")
@@ -304,7 +315,7 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
             run_cmd = config["run_command"].format(exec_name=exec_name)
         else:
             run_cmd = config["run_command"].format(filename=filename)
-        
+
         logging.info("We are before execute_code_in_docker")
         logging.info(f"Formatted Run Command: {run_cmd}")
         exec_result = execute_code_in_docker(
@@ -317,21 +328,23 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
             config["timeout"],
             config["memory_limit"],
         )
-        logging.info("We are after execute_code_in_docker %s", exec_result["status"])
+        logging.info("We are after execute_code_in_docker %s",
+                     exec_result["status"])
         # Handle execution errors
         if exec_result["status"] != "success":
             logging.warning(f"User code execution failed with status")
             expected_output = None
             if event_name == "Reverse Coding":
-                expected_output = execute_reference_solution(problem_id,submission_id, work_dir, input_file)
-            return {
-                "status": exec_result["status"],
-                "user_output": exec_result.get("message", "An error occurred during execution."),
-                "expected_output": expected_output
-            }
+                expected_output = execute_reference_solution(
+                    problem_id, submission_id, work_dir, input_file)
+            return {"status": exec_result["status"],
+                    "user_output": exec_result.get("message", "An error occurred during execution."),
+                    "expected_output": expected_output
+                    }
 
         # Read and return the user's output
-        output_file = os.path.join(work_dir, "outputs", "custom_output.txt")  # Ensure absolute path
+        output_file = os.path.join(
+            work_dir, "outputs", "custom_output.txt")  # Ensure absolute path
 
         if not os.path.exists(output_file):
             logging.error(f"Output file missing at {output_file}")
@@ -343,13 +356,10 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
         logging.info(f"User output read successfully {user_output}")
         # Return results based on the event type
         if event_name == "Reverse Coding":
-            expected_output = execute_reference_solution(problem_id,submission_id, work_dir, input_file)
+            expected_output = execute_reference_solution(
+                problem_id, submission_id, work_dir, input_file)
             logging.info(f"User output read successfully {user_output}")
-            return {
-                "status": "executed_successfully",
-                "expected_output": expected_output,
-                "user_output": user_output
-            }
+            return {"status": "executed_successfully", "expected_output": expected_output, "user_output": user_output}
 
         # For Clash event, return just the user's output
         return {"status": "executed_successfully", "user_output": user_output}
@@ -399,7 +409,9 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
 
         compile_result = compile_code(work_dir, filename, exec_name, language)
         if compile_result["status"] != "success":
-            result.update({"status": "compilation_error", "message": compile_result.get("message", "Compilation failed.")})
+            result.update({"status": "compilation_error", "message": compile_result.get(
+                "message", "Compilation failed.")})
+            return result
 
         (test_case_paths, expected_output_paths), error = prepare_inputs_and_outputs(
             input_path, work_dir

@@ -25,9 +25,7 @@ WEBHOOK_URL_RUN = f'http://{BACKEND_HOST}:{BACKEND_PORT}/webhook/run'
 WEBHOOK_URL_SUBMIT = f'http://{BACKEND_HOST}:{BACKEND_PORT}/webhook/submit'
 
 # Configure Celery
-app = Celery('tasks', 
-             broker=CELERY_BROKER_URL,
-             backend=CELERY_RESULT_BACKEND)
+app = Celery('tasks', broker=CELERY_BROKER_URL,backend=CELERY_RESULT_BACKEND)
 
 # Configure Redis client
 redis_client = Redis(
