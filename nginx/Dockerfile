@@ -1,17 +1,21 @@
 # Use the official Nginx Alpine image as the base
 FROM nginx:alpine
 
-# Install OpenSSL
+# Install OpenSSL for SSL certificate handling
 RUN apk --no-cache add openssl
 
-# Remove the default Nginx config file
+# Remove the default Nginx configuration
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy your custom Nginx configuration file into the container
+# Copy your custom Nginx configuration file
 COPY nginx.conf /etc/nginx/conf.d/
 
-# Expose the necessary ports (80 for HTTP and 443 for HTTPS)
+# Create directories for Let's Encrypt challenge responses
+RUN mkdir -p /var/lib/letsencrypt/.well-known/acme-challenge
+RUN chown -R nginx:nginx /var/lib/letsencrypt
+
+# Expose ports for HTTP (80) and HTTPS (443)
 EXPOSE 80 443
 
-# Run Nginx in the foreground (necessary for Docker containers)
+# Start Nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]

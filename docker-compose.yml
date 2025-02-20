@@ -103,14 +103,35 @@ services:
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
 
-  nginx-conf:
+  nginx:
     build:
       context: ./nginx
+    container_name: online-judge-nginx
+    restart: always
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
-    restart: "on-failure"
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - ./nginx:/etc/nginx/conf.d
+    command: [ "nginx", "-g", "daemon off;" ]
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    restart: unless-stopped
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    entrypoint: >
+      sh -c "certbot certonly --webroot -w /var/lib/letsencrypt
+      -d yourdomain.com --email avadg252@gmail.com --agree-tos --non-interactive && 
+      trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done"
 
 volumes:
   pgdata:
+  certbot-etc:
+  certbot-var:
