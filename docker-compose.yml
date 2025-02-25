@@ -3,10 +3,10 @@ version: '3.8'
 services:
   backend:
     build: .
-    # container_name: online-judge-backend
+    container_name: online-judge-backend
     restart: always
-    # ports:
-    #   - "5000:5000"
+    ports:
+      - "5000:5000"
     environment:
       NODE_ENV: ${NODE_ENV}
       JWT_SECRET: ${JWT_SECRET}
@@ -103,35 +103,7 @@ services:
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
 
-  nginx:
-    build:
-      context: ./nginx
-    container_name: online-judge-nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - backend
-    volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-      - ./nginx:/etc/nginx/conf.d
-    command: [ "nginx", "-g", "daemon off;" ]
 
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    restart: unless-stopped
-    volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-    entrypoint: >
-      sh -c "certbot certonly --webroot -w /var/lib/letsencrypt
-      -d yourdomain.com --email avadg252@gmail.com --agree-tos --non-interactive && 
-      trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done"
-
+ 
 volumes:
   pgdata:
-  certbot-etc:
-  certbot-var:

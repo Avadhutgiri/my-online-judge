@@ -8,8 +8,10 @@ const authenticateToken = require("../middlewares/authMiddleware");
 router.post('/register', userController.registerUser);
 
 
-router.post("/login", userController.loginUser);
+router.post("/login", userController.Login);
 
 router.get('/profile', authenticateToken, userController.GetProfile);
+
+router.post('/registerTeam', authenticateToken, userController.RegisterTeam);
 
 module.exports = router;

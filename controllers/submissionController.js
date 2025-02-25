@@ -19,7 +19,7 @@ async function enqueueTask(queue, data) {
 exports.SubmitProblem = async (req, res) => {
     try {
         const { problem_id, code, language } = req.body;
-        const user_id = req.user.id;
+        const team_id = req.user.team_id;
 
         const problem = await Problem.findByPk(problem_id);
         if (!problem) {
@@ -33,7 +33,7 @@ exports.SubmitProblem = async (req, res) => {
             });
         }
         const submission = await Submission.create({
-            user_id,
+            team_id,
             problem_id,
             code,
             language,
@@ -83,7 +83,7 @@ exports.RunProblem = async (req, res) => {
         const runData = {
             submission_id: submission_id,
             problem_id,
-            user_id: user.user_id,
+            team_id: user.team_id,
             code,
             customTestcase: customTestcase || null,
             language,
@@ -102,9 +102,9 @@ exports.RunProblem = async (req, res) => {
 
 exports.GetHistory = async (req, res) => {
     try {
-        const user_id = req.user.id;
+        const team_id = req.user.team_id;
         const submissions = await Submission.findAll({
-            where: { user_id },
+            where: { team_id },
             include: [{ model: Problem, attributes: ['title'] }],
             order: [['submitted_at', 'DESC']]
         });

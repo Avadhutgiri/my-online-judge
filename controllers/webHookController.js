@@ -1,6 +1,7 @@
 const Submission = require('../models/Submission');
 const Problem = require('../models/Problem');
 const User = require('../models/User');
+const Team = require('../models/Team');
 
 async function updateDatabase(submissionId, updateData) {
     console.log(`Updating database for submission ${submissionId}:`, updateData);
@@ -15,17 +16,17 @@ async function updateDatabase(submissionId, updateData) {
             return { error: `Submission ${submissionId} not found` };
         }
 
-        const user = await User.findByPk(submission.user_id);
+        const team = await Team.findByPk(submission.team_id);
         const problem = await Problem.findByPk(submission.problem_id);
 
-        if (!user || !problem) {
+        if (!team || !problem) {
             console.log(`User or Problem not found.`);
             return { error: "User or Problem not found for submission." };
         }
 
         const existingCorrectSubmission = await Submission.findOne({
             where: {
-                user_id: submission.user_id,
+                team_id: submission.team_id,
                 problem_id: submission.problem_id,
                 result: 'Accepted'
             }
@@ -33,20 +34,20 @@ async function updateDatabase(submissionId, updateData) {
 
         if (status.toLowerCase() === 'accepted') {
             if (!existingCorrectSubmission) {
-                user.score += problem.score;
-                user.correct_submission += 1;
+                team.score += problem.score;
+                team.correct_submission += 1;
             }
-            if (!user.first_solve_time) {
-                user.first_solve_time = new Date();
+            if (!team.first_solve_time) {
+                team.first_solve_time = new Date();
             }
 
         }
         else {
-            user.wrong_submission += 1;
+            team.wrong_submission += 1;
         }
 
         // Save updated records
-        await user.save();
+        await team.save();
         submission.result = status;
         await submission.save();
 
@@ -83,7 +84,7 @@ exports.SubmitWebhook = async (req, res) => {
     try {
         const { submission_id, status, message, failed_test_case } = req.body;
 
-        if (status === "accepted") {
+        if (status === "Accepted") {
             console.log(`Submission Accepted: ${submission_id}`);
         } else {
             console.log(`Submission Failed: ${submission_id}`);

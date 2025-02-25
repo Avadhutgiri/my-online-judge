@@ -1,7 +1,5 @@
 
 const redisClient = require('../config/redisConfig');  // Import Redis client
-const User = require('../models/User');
-const Problem = require('../models/Problem');
 const Submission = require('../models/Submission');
 
 exports.getSubmission = async (req, res) => {

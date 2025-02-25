@@ -93,7 +93,7 @@ exports.getAllSubmissions = async (req, res) => {
         const submissions = await Submission.findAll({
             attributes: [
                 "id",
-                "user_id",
+                "team_id",
                 "problem_id",
                 "result",
                 "execution_time",

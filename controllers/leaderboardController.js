@@ -1,5 +1,4 @@
-
-const { User, Problem, Submission } = require('../models');
+const { Team, Problem, Submission } = require('../models');
 const EVENT_NAME_MAP = {
     ReverseCoding: 'Reverse Coding',
     Clash: 'Clash'
@@ -24,57 +23,71 @@ exports.getLeaderboard = async (req, res) => {
         });
 
         // Create fixed column names: q1, q2, ..., q6
-        const problemColumns = problems.map((problem, index) => `q${index + 1}`);
+        const problemColumns = problems.map((_, index) => `q${index + 1}`);
 
-        // Fetch user data with accepted submissions for these problems
-        const users = await User.findAll({
+        // Fetch teams participating in the event
+        const teams = await Team.findAll({
             where: { event_name, is_junior },
-            attributes: ['id', 'username'],
-            include: [
-                {
-                    model: Submission,
-                    attributes: ['problem_id', 'result'],
-                    where: { result: 'Accepted' },
-                    include: [{ model: Problem, attributes: ['score'] }]
-                }
-            ]
+            attributes: ['id', 'team_name', 'score', 'correct_submission', 'wrong_submission', 'first_solve_time']
         });
 
-        // Transform the data for problem-wise scores
-        const leaderboard = users.map((user) => {
+        // Fetch all accepted submissions at once
+        const submissions = await Submission.findAll({
+            where: { result: 'Accepted' },
+            attributes: ['team_id', 'problem_id'],
+            include: [{ model: Problem, attributes: ['score'] }]
+        });
+
+        // Index submissions by team ID for **faster lookup**
+        const submissionMap = {};
+        submissions.forEach(sub => {
+            if (!submissionMap[sub.team_id]) {
+                submissionMap[sub.team_id] = {};
+            }
+            submissionMap[sub.team_id][sub.problem_id] = sub.Problem.score;
+        });
+
+        // Transform data for problem-wise scores
+        const leaderboard = teams.map((team) => {
             let totalScore = 0;
             const problemScores = {};
 
             problems.forEach((problem, index) => {
-                const submission = user.Submissions.find(sub => sub.problem_id === problem.id);
-                const score = submission ? problem.score : 0;
+                const score = submissionMap[team.id]?.[problem.id] || 0;
                 totalScore += score;
-                problemScores[`q${index + 1}`] = score;  // Use `q1`, `q2`, etc.
+                problemScores[`q${index + 1}`] = score;  // Ensuring q1, q2, ..., q6
             });
 
             return {
-                username: user.username,
+                teamname: team.team_name,
                 ...problemScores,
-                total_score: totalScore
+                total_score: totalScore,
+                first_solve_time: team.first_solve_time || new Date(9999999999999) // Default large value if missing
             };
         });
 
-        // Rank the users and add rank to the response
-        leaderboard.sort((a, b) => b.total_score - a.total_score);
-        const rankedUsers = leaderboard.map((user, index) => ({
+        // Rank teams with **tie-breaker logic**
+        leaderboard.sort((a, b) => {
+            if (b.total_score !== a.total_score) {
+                return b.total_score - a.total_score;  // **Sort by total score first**
+            }
+            return new Date(a.first_solve_time) - new Date(b.first_solve_time); // **Tie-breaker: First Solve Time**
+        });
+
+        const rankedTeams = leaderboard.map((team, index) => ({
             rank: index + 1 + (page - 1) * limit,
-            ...user
+            ...team
         }));
 
-        // Send both problem details and ranked users
+        // Send **both** problem details & ranked users
         res.json({
             event_name,
-            problems,                 
-            problem_columns: problemColumns,  
-            users: rankedUsers        
+            problems,
+            problem_columns: problemColumns,
+            users: rankedTeams
         });
     } catch (error) {
         console.error('Error fetching leaderboard:', error);
         res.status(500).json({ error: 'Error fetching leaderboard', details: error.message });
     }
-}
+};
