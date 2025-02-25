@@ -41,6 +41,8 @@ router.post("/login", adminController.loginAdmin);
 
 router.get("/users", adminAuthenticate, adminController.getAllUsers);
 
+router.get("/teams", adminAuthenticate, adminController.getAllTeams);
+
 router.post("/problems", adminAuthenticate, adminController.addProblem);
 
 router.put("/problems/:id", adminAuthenticate, adminController.putProblem);

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { User, Submission } = require('../models');
-const { Problem, ProblemSample } = require('../models');
+const { Problem, ProblemSample, Team } = require('../models');
 
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
@@ -85,6 +85,26 @@ exports.getAllUsers = async (req, res) => {
         res
             .status(500)
             .json({ error: "Error fetching users", details: error.message });
+    }
+}
+
+exports.getAllTeams = async (req, res) => {
+    try {
+        const teams = await Team.findAll({
+            attributes: [
+                "id",
+                "team_name",
+                "event_name",
+                "is_junior",
+                "score",
+                "correct_submission",
+                "wrong_submission",
+                "first_solve_time",
+            ],
+        });
+        res.json(teams);
+    } catch (error) {
+        res.status(500).json({ error: "Error fetching teams", details: error.message });
     }
 }
 
