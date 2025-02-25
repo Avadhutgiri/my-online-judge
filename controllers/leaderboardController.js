@@ -15,30 +15,30 @@ exports.getLeaderboard = async (req, res) => {
             return res.status(400).json({ error: 'Invalid event name.' });
         }
 
-        // Fetch all problems for the event and category, sorted by ID
+        // 🔹 Fetch all problems for the event and category, sorted by ID
         const problems = await Problem.findAll({
             where: { event_name, is_junior },
             attributes: ['id', 'title', 'score'],
             order: [['id', 'ASC']]
         });
 
-        // Create fixed column names: q1, q2, ..., q6
+        // 🔹 Create fixed column names: q1, q2, ..., q6
         const problemColumns = problems.map((_, index) => `q${index + 1}`);
 
-        // Fetch teams participating in the event
+        // 🔹 Fetch teams participating in the event
         const teams = await Team.findAll({
             where: { event_name, is_junior },
             attributes: ['id', 'team_name', 'score', 'correct_submission', 'wrong_submission', 'first_solve_time']
         });
 
-        // Fetch all accepted submissions at once
+        // 🔹 Fetch all accepted submissions at once (✅ FIX: Using `as: 'Problem'`)
         const submissions = await Submission.findAll({
             where: { result: 'Accepted' },
             attributes: ['team_id', 'problem_id'],
-            include: [{ model: Problem, attributes: ['score'] }]
+            include: [{ model: Problem, attributes: ['score'], as: 'Problem' }]  // ✅ FIXED alias issue
         });
 
-        // Index submissions by team ID for **faster lookup**
+        // 🔹 Index submissions by team ID for **faster lookup**
         const submissionMap = {};
         submissions.forEach(sub => {
             if (!submissionMap[sub.team_id]) {
@@ -47,7 +47,7 @@ exports.getLeaderboard = async (req, res) => {
             submissionMap[sub.team_id][sub.problem_id] = sub.Problem.score;
         });
 
-        // Transform data for problem-wise scores
+        // 🔹 Transform data for problem-wise scores
         const leaderboard = teams.map((team) => {
             let totalScore = 0;
             const problemScores = {};
@@ -66,7 +66,7 @@ exports.getLeaderboard = async (req, res) => {
             };
         });
 
-        // Rank teams with **tie-breaker logic**
+        // 🔹 Rank teams with **tie-breaker logic**
         leaderboard.sort((a, b) => {
             if (b.total_score !== a.total_score) {
                 return b.total_score - a.total_score;  // **Sort by total score first**
@@ -79,7 +79,7 @@ exports.getLeaderboard = async (req, res) => {
             ...team
         }));
 
-        // Send **both** problem details & ranked users
+        // 🔹 Send **both** problem details & ranked users
         res.json({
             event_name,
             problems,

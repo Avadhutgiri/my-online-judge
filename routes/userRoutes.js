@@ -12,6 +12,6 @@ router.post("/login", userController.Login);
 
 router.get('/profile', authenticateToken, userController.GetProfile);
 
-router.post('/registerTeam', authenticateToken, userController.RegisterTeam);
+router.post('/registerTeam', userController.RegisterTeam);
 
 module.exports = router;

@@ -55,6 +55,5 @@ router.get("/submissions", adminAuthenticate, adminController.getAllSubmissions)
 
 router.get("/stats", adminAuthenticate, adminController.getStats);
 
-// router.post("/add-solution/", adminAuthenticate, upload.array('files'), adminController.addSolution);
 
 module.exports = router;

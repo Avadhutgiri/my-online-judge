@@ -30,6 +30,10 @@ const User = sequelize.define('User', {
         allowNull: false,
         defaultValue: false
     },
+    event_name: {
+        type: DataTypes.ENUM('Reverse Coding', 'Clash'),
+        allowNull: false
+    },
     team_id: {
         type: DataTypes.INTEGER,
         allowNull: true
@@ -43,4 +47,3 @@ const User = sequelize.define('User', {
 });
 
 module.exports = User;
-    

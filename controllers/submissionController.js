@@ -105,7 +105,7 @@ exports.GetHistory = async (req, res) => {
         const team_id = req.user.team_id;
         const submissions = await Submission.findAll({
             where: { team_id },
-            include: [{ model: Problem, attributes: ['title'] }],
+            include: [{ model: Problem, attributes: ['title'], as: 'Problem' }],
             order: [['submitted_at', 'DESC']]
         });
         res.json(submissions);
