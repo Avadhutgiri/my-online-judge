@@ -102,8 +102,67 @@ services:
       BACKEND_PORT: ${BACKEND_PORT}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+    
+  nginx-certbot:
+    image: nginx-certbot
+    build: ./nginx-certbot
+    volumes:
+      - certbot_challenges:/var/www/certbot
+    ports:
+      - "80:80"
+    networks:
+      - online-judge
+  
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_challenges:/var/www/certbot
+    entrypoint: >
+      sh -c "certbot certonly --webroot --webroot-path=/var/www/certbot 
+      --email avadg252@gmail.com --agree-tos --no-eff-email 
+      --keep-until-expiring -d onlinejudge.api.credenz.co.in && echo '✅ Certbot finished successfully!'"
+    depends_on:
+      nginx-certbot:
+        condition: service_started
+    networks:
+      - online-judge
+    
+  
+  shutdown-nginx-certbot:
+    image: alpine
+    depends_on:
+      certbot:
+        condition: service_completed_successfully
+    command: >
+      sh -c "echo 'Certbot finished, triggering nginx-certbot shutdown...' && 
+      sleep 2 && 
+      kill -TERM 1"
+    pid: "service:nginx-certbot"
+
+  nginx:
+    image: nginx-main
+    build: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_challenges:/var/www/certbot
+    depends_on:
+      backend:
+        condition: service_started
+      shutdown-nginx-certbot:
+        condition: service_completed_successfully
+    restart: always
 
 
- 
+
 volumes:
   pgdata:
+  letsencrypt:
+  certbot_challenges:
+
+networks:
+  online-judge:
+    driver: bridge
