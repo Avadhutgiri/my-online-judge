@@ -1,0 +1,116 @@
+[33mcommit 4c2d6eab37d9cdc13820d2430ee5857034037052[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mteam_feature[m[33m)[m
+Merge: 9f4c05d cf003fa
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Wed Mar 5 11:43:55 2025 +0530
+
+    Merge branch 'main' into team_feature
+
+[33mcommit 9f4c05d35109ea26cf1431dd0c74c0c954dc72fb[m[33m ([m[1;31morigin/team_feature[m[33m)[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Wed Mar 5 11:36:40 2025 +0530
+
+    Major Updates
+    Solo/Team Fixes
+    RunSystem And RunCode Updates
+
+[33mcommit 1b7d56e12aeb034ea0c0bd6a73ba465440eb1177[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Wed Feb 26 02:09:43 2025 +0530
+
+    Working Updated for Team
+
+[33mcommit 91ee773187906aa82ee8145ab24c226b297752a9[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Tue Feb 25 21:55:14 2025 +0530
+
+    Admin Update
+
+[33mcommit eeeb8e47d9040f0690853421cb8671e2724e54d2[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Tue Feb 25 21:50:28 2025 +0530
+
+    Updated Team Feature
+
+[33mcommit cf003faa199a39ee4e79b1fcf85f18ab8f467a0c[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m
+Author: Avadhutgiri <avad252@gmail.com>
+Date:   Tue Feb 25 07:49:17 2025 +0000
+
+    Dockerization Done
+
+[33mcommit 19594694725f5428bb939bb08334ab72ae1560de[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Thu Feb 20 05:32:41 2025 +0530
+
+    Certbot Add
+
+[33mcommit 411b78deb218050247ee134c048fe14843a0c017[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Tue Feb 18 23:28:10 2025 +0530
+
+    Ready For Deployment
+
+[33mcommit 35bfe3931658092d92e96d2955aade4df5463d91[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Mon Feb 17 16:50:07 2025 +0530
+
+    Cleaned
+
+[33mcommit b278fc1856b508e1b4f391c61277e5df9d705f10[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Mon Feb 17 16:47:31 2025 +0530
+
+    Deployed Successfully
+
+[33mcommit 4b6c3c4cced56999aa3cab70c4ef456cca9de43a[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Fri Feb 14 23:53:36 2025 +0530
+
+    Updated Execute_code.py
+
+[33mcommit 6fee908c372d95b472f66ca5a2a52279d624b0dd[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Tue Feb 11 21:51:30 2025 +0530
+
+    Dockerization Start
+
+[33mcommit 27982d32077b1373cc58e50531015a56be334fa1[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Mon Feb 10 21:11:35 2025 +0530
+
+    Update structure
+
+[33mcommit a7e96b0364de4ae385cf09c413ab58d00fcef839[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Mon Feb 10 21:11:10 2025 +0530
+
+    Update structure
+
+[33mcommit cb329bf33c58d48572bf0532fd7c99f0a37315b1[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Mon Feb 10 21:08:46 2025 +0530
+
+    Update structure
+
+[33mcommit 9cc8913dc8ed4031a7461c9eb81ccb4b00a146c7[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Mon Feb 10 21:07:07 2025 +0530
+
+    All Testing Done
+
+[33mcommit 57d6f60cbe15f01a98ba0b5cc3e9576f8a68a293[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Mon Feb 10 13:59:33 2025 +0530
+
+    Final Testing
+
+[33mcommit 4b11b3ff086db4b14e17a9c6df481d6ea9040d97[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Sat Feb 8 23:03:51 2025 +0530
+
+    Implement Docker Execution
+
+[33mcommit bb8267109526ed43c07e50a80ce3a4abddd855a3[m
+Author: Avadhutgiri <avadg252@gmail.com>
+Date:   Sat Jan 25 23:35:35 2025 +0530
+
+    Initial commit: Basic authentication and problem management APIs

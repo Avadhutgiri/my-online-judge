@@ -21,11 +21,14 @@ const cors = require("cors");
 
 // Set CORS TO public
 app.use(
-    cors({
-      origin: ["http://localhost:5173","http://localhost:3000"], // Update this to match frontend URL
-      credentials: true, // Allow credentials (cookies)
-    })
-  );
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:3000", "http://192.168.59.114:5173"], 
+    credentials: true, // Allows cookies to be sent
+    methods: ["GET", "POST", "PUT", "DELETE"], // Explicitly allow HTTP methods
+    allowedHeaders: ["Content-Type", "Authorization"], // Allow necessary headers
+  })
+);
+
 // Sync database at server start (optional)
 (async () => {
     await syncDB();
