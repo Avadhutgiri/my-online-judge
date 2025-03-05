@@ -18,7 +18,7 @@ exports.getSubmission = async (req, res) => {
 
         // Handle normal submission polling (for stored results in the database)
         const submission = await Submission.findByPk(submission_id, {
-            attributes: ['id', 'result', 'execution_time', 'memory_usage']
+            attributes: ['id', 'result', 'execution_time', 'memory_usage', 'failed_test_case']
         });
 
         if (!submission) {
@@ -28,8 +28,9 @@ exports.getSubmission = async (req, res) => {
         res.json({
             submission_id: submission.id,
             status: submission.result,
-            execution_time: submission.execution_time,
-            memory_usage: submission.memory_usage
+            failed_test_case: submission.failed_test_case,
+            // execution_time: submission.execution_time,
+            // memory_usage: submission.memory_usage
         });
     } catch (error) {
         res.status(500).json({ error: 'Error fetching task status', details: error.message });

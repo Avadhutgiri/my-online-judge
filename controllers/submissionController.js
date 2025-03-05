@@ -4,7 +4,8 @@ const { Submission, Problem } = require('../models');
 
 async function enqueueTask(queue, data) {
     try {
-        data.code = Buffer.from(data.code).toString('base64');
+        if (data.code)
+            data.code = Buffer.from(data.code).toString('base64');
         if (data.customTestcase) {
             data.customTestcase = Buffer.from(data.customTestcase).toString('base64');
         }
@@ -93,8 +94,35 @@ exports.RunProblem = async (req, res) => {
 
         await enqueueTask('runQueue', runData);
 
-        res.status(200).json({ message: `Run request enqueued successfully. Submission_id: ${submission_id}` });
-    } catch (error) {
+        res.status(200).json({ message: `Run request enqueued successfully.`,submission_id: submission_id });
+    }catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to enqueue run request.' });
+    }   
+}
+
+exports.RunOnSystem = async (req, res) => {
+    try{
+        const { problem_id, customTestcase } = req.body;
+
+        const problem = await Problem.findByPk(problem_id);
+        if (!problem) {
+            return res.status(404).json({ error: 'Problem not found' });
+        }
+
+        const submission_id= `run_${Date.now()}`;
+
+        const runData = {
+            submission_id: submission_id,
+            problem_id,
+            customTestcase: customTestcase || null,
+        };
+
+        await enqueueTask('runSystemQueue', runData);
+
+        res.status(200).json({ message: `Run request enqueued successfully.`,submission_id: submission_id });
+    }
+    catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to enqueue run request.' });
     }
@@ -105,6 +133,21 @@ exports.GetHistory = async (req, res) => {
         const team_id = req.user.team_id;
         const submissions = await Submission.findAll({
             where: { team_id },
+            include: [{ model: Problem, attributes: ['title'], as: 'Problem' }],
+            order: [['submitted_at', 'DESC']]
+        });
+        res.json(submissions);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Error fetching submission history', details: error.message });
+    }
+}
+
+exports.GetHistoryByProblem = async (req, res) => {
+    try{
+        const team_id = req.user.team_id;
+        const submissions = await Submission.findAll({
+            where: { team_id, problem_id: req.params.problem_id },
             include: [{ model: Problem, attributes: ['title'], as: 'Problem' }],
             order: [['submitted_at', 'DESC']]
         });

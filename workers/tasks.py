@@ -2,7 +2,7 @@ import json
 import base64
 from celery import Celery
 from redis import Redis
-from workers.execute_code import run, submit
+from workers.execute_code import run, submit, runSystemcode
 import requests
 import os
 
@@ -19,10 +19,12 @@ CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'redis://{REDIS_HOST
 # Queue names
 RUN_QUEUE = 'runQueue'
 SUBMIT_QUEUE = 'submitQueue'
+RUN_SYSTEM_QUEUE= 'runSystemQueue'
 
 # Webhook URLs using environment variables
 WEBHOOK_URL_RUN = f'http://{BACKEND_HOST}:{BACKEND_PORT}/webhook/run'
 WEBHOOK_URL_SUBMIT = f'http://{BACKEND_HOST}:{BACKEND_PORT}/webhook/submit'
+WEBHOOK_URL_SYSTEM = f'http://{BACKEND_HOST}:{BACKEND_PORT}/webhook/system'
 
 # Configure Celery
 app = Celery('tasks', broker=CELERY_BROKER_URL,backend=CELERY_RESULT_BACKEND)
@@ -81,7 +83,7 @@ def process(queue):
         task = json.loads(data)
         print(f"Processing task: {task['submission_id']}")
 
-        if task['code']:
+        if  'code' in task:
             task['code'] = decode(task['code'])
 
         if task.get('customTestcase'):
@@ -96,20 +98,35 @@ def process(queue):
                 task['language'],
                 task['problem_id'],
                 inputData=task.get('customTestcase'),
-                event_name=task.get('event', 'Clash')
             )
 
             webhook_data = {
                 'submission_id': task['submission_id'],
                 'status': result.get('status', 'failed'),
                 'message': result.get('message') or None,
-                'user_output': result.get('user_output') or None,
+                'user_output': result.get('user_output') or None,            
+                }
+            print(f"webhook_data: {webhook_data}")
+            store_run_result(task['submission_id'], webhook_data)
+            send_webhook_result(WEBHOOK_URL_RUN, webhook_data)
+            
+        elif queue == RUN_SYSTEM_QUEUE:
+            result =runSystemcode(
+                task['submission_id'],
+                task['problem_id'],
+                inputData=task.get('customTestcase'),
+            )
+
+            webhook_data = {
+                'submission_id': task['submission_id'],
+                'status': result.get('status', 'failed'),
+                'message': result.get('message') or None,
                 'expected_output': result.get('expected_output')
             }
 
             store_run_result(task['submission_id'], webhook_data)
-            send_webhook_result(WEBHOOK_URL_RUN, webhook_data)
-
+            send_webhook_result(WEBHOOK_URL_SYSTEM, webhook_data)
+            
         else:
             result = submit(
                 submission_id=task['submission_id'],
@@ -123,7 +140,7 @@ def process(queue):
                 'submission_id': task['submission_id'],
                 'status': result.get('status'),
                 'message': result.get('message') or None,
-                'failed_test_case': result.get('failed_test_case') or None
+                'failed_test_case': result.get('test_case') or None
             }
 
             send_webhook_result(WEBHOOK_URL_SUBMIT, webhook_data)
@@ -146,5 +163,11 @@ app.conf.beat_schedule = {
         'task': 'tasks.process',
         'schedule': 5.0,  # every 5 seconds
         'args': (SUBMIT_QUEUE,)
+    }
+    ,
+    'process-run-system-queue': {
+        'task': 'tasks.process',
+        'schedule': 5.0,  # every 5 seconds
+        'args': (RUN_SYSTEM_QUEUE,)
     }
 }

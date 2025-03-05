@@ -11,5 +11,9 @@ router.get("/", authenticateToken, problemController.getProblems );
 
 router.get("/testcases/:problem_id", problemController.getTestCase);
 
+router.get("/stats/:problem_id", authenticateToken, problemController.getProblemStats);
+
+router.get("/:id", authenticateToken, problemController.getProblem);
+
 
 module.exports = router;

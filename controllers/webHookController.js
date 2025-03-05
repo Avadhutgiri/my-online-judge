@@ -7,7 +7,7 @@ async function updateDatabase(submissionId, updateData) {
     console.log(`Updating database for submission ${submissionId}:`, updateData);
 
     try {
-        const { status } = updateData;
+        const { status,failed_test_case, message } = updateData;
 
         // Find submission, user, and problem records
         const submission = await Submission.findByPk(submissionId);
@@ -49,6 +49,15 @@ async function updateDatabase(submissionId, updateData) {
         // Save updated records
         await team.save();
         submission.result = status;
+        submission.result = status;
+        if (failed_test_case) {
+            submission.failed_test_case = failed_test_case;
+        }
+        if (message) {
+            submission.message = message;
+        }
+        await team.save();
+
         await submission.save();
 
         console.log(`Database updated successfully for submission ${submissionId}.`);
@@ -60,14 +69,11 @@ async function updateDatabase(submissionId, updateData) {
 }
 exports.RunWebhook = async (req, res) => {
     try {
-        const { submission_id, status, message, user_output, expected_output } = req.body;
+        const { submission_id, status, message, user_output } = req.body;
 
         if (status === "executed_successfully") {
             console.log(`Run Result: ${submission_id}`);
             console.log(`User Output: ${user_output}`);
-            if (expected_output) {
-                console.log(`Expected Output: ${expected_output}`);
-            }
         } else {
             console.log(`Run Error: ${submission_id}`);
             console.log(`Message: ${message}`);
@@ -79,6 +85,26 @@ exports.RunWebhook = async (req, res) => {
         res.status(500).json({ message: "Internal server error." });
     }
 }
+
+exports.SystemWebhook = async (req, res) => {
+    try {
+        const { submission_id, status, message, expected_output } = req.body;
+
+        if (status === "executed_successfully") {
+            console.log(`Run Result: ${submission_id}`);
+            console.log(`Expected Output: ${expected_output}`);
+        } else {
+            console.log(`Run Error: ${submission_id}`);
+            console.log(`Message: ${message}`);
+        }
+
+        res.status(200).json({ message: "System webhook processed successfully." });
+    } catch (error) {
+        console.error("Error processing system webhook:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+};
+
 
 exports.SubmitWebhook = async (req, res) => {
     try {

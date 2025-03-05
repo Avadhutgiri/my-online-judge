@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
+const Problem = require('./Problem');  //  Import Problem model
 
 const ProblemSample = sequelize.define('ProblemSample', {
     id: {
@@ -10,11 +11,6 @@ const ProblemSample = sequelize.define('ProblemSample', {
     problem_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'Problems',
-            key: 'id'
-        },
-        onDelete: 'CASCADE'
     },
     input: {
         type: DataTypes.TEXT,

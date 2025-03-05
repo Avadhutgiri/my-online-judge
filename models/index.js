@@ -15,8 +15,8 @@ Team.hasMany(Submission, { foreignKey: 'team_id', as: 'Submissions' });
 Submission.belongsTo(Problem, { foreignKey: 'problem_id', as: 'Problem' });
 Problem.hasMany(Submission, { foreignKey: 'problem_id', as: 'Submissions' });
 
-Problem.hasMany(ProblemSample, { foreignKey: 'problem_id', as: 'Samples' });
-ProblemSample.belongsTo(Problem, { foreignKey: 'problem_id', as: 'Problem' });
+Problem.hasMany(ProblemSample, { foreignKey: 'problem_id'});
+ProblemSample.belongsTo(Problem, { foreignKey: 'problem_id' });
 
 const syncDB = async () => {
     try {

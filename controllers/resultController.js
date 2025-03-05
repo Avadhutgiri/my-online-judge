@@ -1,3 +1,4 @@
+const e = require('express');
 const { Team, Problem, Submission } = require('../models');
 
 exports.getResult = async (req, res) => {
@@ -48,6 +49,8 @@ exports.getResult = async (req, res) => {
                 id: team_id,
                 team_name: team.team_name,
                 total_score: team.score,
+                event_name,
+                is_junior,
                 correct_submission: team.correct_submission,
                 wrong_submission: team.wrong_submission,
                 accuracy: `${accuracy}%`,

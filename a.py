@@ -1,15 +1,15 @@
 import base64
 
 code = """
-#include <iostream>
-using namespace std;
+import java.util.Scanner;
 
-int main() {
-    int n;
-    cin >> n;
-    cout << n * n * n << endl;
-
-    return 0;
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        int n = scanner.nextInt();
+        System.out.println(n * n * n);
+        scanner.close();
+    }
 }
 """
 

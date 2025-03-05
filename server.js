@@ -16,11 +16,22 @@ const app = express();
 app.use(express.json());  // To handle JSON payloads
 app.use(cookieParser())
 const PORT = process.env.PORT || 5000;
+const cors = require("cors");
 
+
+// Set CORS TO public
+app.use(
+    cors({
+      origin: ["http://localhost:5173","http://localhost:3000"], // Update this to match frontend URL
+      credentials: true, // Allow credentials (cookies)
+    })
+  );
 // Sync database at server start (optional)
 (async () => {
     await syncDB();
 })();
+
+// Set CORS TO public
 
 // Basic route
 app.get('/', (req, res) => {
@@ -30,6 +41,10 @@ app.get('/', (req, res) => {
 app.get('/api/protected', authenticateToken, (req, res) => {
     res.json({ message: 'Access granted', user: req.user });
 });
+
+app.get('/api/users/verify', authenticateToken, (req, res) => {
+    res.json({ authenticated: true, user: req.user });
+  });
 
 
 // Start the server

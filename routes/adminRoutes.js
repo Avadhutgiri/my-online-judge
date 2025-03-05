@@ -53,7 +53,7 @@ router.post('/upload-testcases', adminAuthenticate, upload.array('files'), admin
 
 router.get("/submissions", adminAuthenticate, adminController.getAllSubmissions);
 
-router.get("/stats", adminAuthenticate, adminController.getStats);
+// router.get("/stats", adminAuthenticate, adminController.getStats);
 
 
 module.exports = router;

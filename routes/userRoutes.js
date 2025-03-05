@@ -14,4 +14,6 @@ router.get('/profile', authenticateToken, userController.GetProfile);
 
 router.post('/registerTeam', userController.RegisterTeam);
 
+router.get('/logout', userController.Logout);
+
 module.exports = router;

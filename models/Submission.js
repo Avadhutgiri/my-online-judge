@@ -12,11 +12,6 @@ const Submission = sequelize.define('Submission', {
     team_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: Team,
-            key: 'id'
-        },
-        onDelete: 'CASCADE'
     },
     problem_id: {
         type: DataTypes.INTEGER,
@@ -34,8 +29,13 @@ const Submission = sequelize.define('Submission', {
         type: DataTypes.ENUM('cpp', 'python', 'java'),
         allowNull: false
     },
+    failed_test_case: {
+        type: DataTypes.TEXT,
+        defaultValue: null,
+        allowNull: true
+    },
     result: {
-        type: DataTypes.ENUM('failed','Pending', 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded'),
+        type: DataTypes.TEXT,
         allowNull: false,
         defaultValue: 'Pending'
     },

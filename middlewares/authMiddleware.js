@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const authenticateToken = (req, res, next) => {
+    console.log("Cookies:", req?.cookies); // Debugging - Check if cookies are present
+
     if (!req.cookies || !req.cookies.token) {
         return res.status(403).json({ error: 'Access denied. No token provided.' });
     }

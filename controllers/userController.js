@@ -51,11 +51,11 @@ exports.registerUser = async (req, res) => {
 
 exports.RegisterTeam = async (req, res) => {
     try {
-        const { username1, team_name, username2, event_name, is_junior } = req.body;
+        const { username1, team_name, username2, event_name} = req.body;
 
         //  Find both users
-        const user1 = await User.findOne({ where: { username: username1 } });
-        const user2 = await User.findOne({ where: { username: username2 } });
+        const user1 = await User.findOne({ where: { username: username1, event_name } });
+        const user2 = await User.findOne({ where: { username: username2, event_name } });
 
         if (!user1 || !user2) {
             return res.status(404).json({ error: "Both users must be registered before creating a team." });
@@ -74,13 +74,17 @@ exports.RegisterTeam = async (req, res) => {
             return res.status(400).json({ error: "Both users must be in the same event and category." });
         }
 
-        //  Create the new team
+        const teamExists = await Team.findOne({ where: { team_name, event_name } });
+        if (teamExists) {
+            return res.status(400).json({ error: "Team name already exists. Please choose another." });
+        }
+
         const team = await Team.create({
             team_name,
             user1_id: user1.id,
             user2_id: user2.id,
             event_name,
-            is_junior,
+            is_junior: user1.is_junior,
             score: 0
         });
 
@@ -102,9 +106,8 @@ exports.RegisterTeam = async (req, res) => {
 
 exports.Login = async (req, res) => {
     try {
-        const { username, password, team_login, team_name } = req.body;
+        const { username, password, team_login, team_name, event_name } = req.body;
 
-        // ✅ Ensure `team_login` is explicitly provided
         if (team_login === undefined) {
             return res.status(400).json({ error: "The 'team_login' field is required (true or false)." });
         }
@@ -112,39 +115,40 @@ exports.Login = async (req, res) => {
         let user;
 
         if (team_login) {
-            // ✅ Team login: Requires team_name
             if (!team_name) {
                 return res.status(400).json({ error: "Team login requires 'team_name' to be provided." });
             }
-
-            const team = await Team.findOne({ where: { team_name } });
-
+            const team = await Team.findOne({ where: { team_name, event_name } });
             if (!team) {
                 return res.status(404).json({ error: "Team not found. Please register first." });
             }
 
-            user = await User.findOne({ where: { username, team_id: team.id } });
+            user = await User.findOne({ where: { username, team_id: team.id, event_name:event_name } });
 
             if (!user) {
                 return res.status(404).json({ error: "User not found in this team." });
             }
         } else {
-            // ✅ Solo login: User logs in individually
-            user = await User.findOne({ where: { username } });
+            user = await User.findOne({ where: { username, event_name } });
+
+            const checkTeam = await Team.findByPk(user.team_id);
+
+            if (checkTeam.user2_id){
+                return res.status(400).json({ error: "User is already part of a team. Please login as a team." });
+            }
 
             if (!user) {
                 return res.status(404).json({ error: "User not found. Please register first." });
             }
         }
 
-        // ✅ Check password
+
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
             return res.status(400).json({ error: "Invalid password." });
         }
 
-        // ✅ Generate JWT token
         const token = jwt.sign(
             {
                 id: user.id,
@@ -158,16 +162,16 @@ exports.Login = async (req, res) => {
         );
         res.cookie("token", token, {
             httpOnly: true,    // Prevents JavaScript access
-            secure: true, // Secure only in production
-            sameSite: "None", // Helps prevent CSRF attacks
-            maxAge: 2 * 60 * 60 * 1000 // 2 hours
+            secure: false, // Secure only in production
+            sameSite: "Lax", // Helps prevent CSRF attacks
+            maxAge: 2 * 60 * 60 * 1000
         });
 
         return res.status(200).json({
             message: "User logged in successfully",
             token: token,
             user: user.username,
-            team_name: team_login ? team_name : null // ✅ Only return team name if logging in with a team
+            team_name: team_login ? team_name : null 
         });
 
     } catch (error) {
@@ -186,3 +190,15 @@ exports.GetProfile = async (req, res) => {
         res.status(500).json({ error: 'Error fetching user profile' });
     }
 };
+
+// Create a logout controller
+exports.Logout = async (req, res) => {
+    try{
+        res.clearCookie("token");
+        res.status(200).json({ message: "User logged out successfully" });
+    }
+    catch(error){
+        console.error("Error logging out:", error);
+        res.status(500).json({ error: "Error logging out", details: error.message });
+    }
+}
