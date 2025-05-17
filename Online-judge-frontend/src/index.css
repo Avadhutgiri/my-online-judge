@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: "Red Hat Display", sans-serif;
+}
+
+html,body{
+    height: 100vh;
+    width: 100vw;
+}
+
+/* For Webkit browsers (Chrome, Safari) */
+::-webkit-scrollbar {
+    width: 4px; /* Thin scrollbar width */
+}
+
+::-webkit-scrollbar-track {
+    background: transparent; /* Remove background of the scrollbar track */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #86C232; /* Color of the scrollbar thumb */
+    border-radius: 10px; /* Rounded corners for the thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #86C232; /* Darker color on hover */
+}
+
+/* For Firefox */
+html {
+    scrollbar-width: thin; /* Set scrollbar to thin */
+    scrollbar-color: #86C232 transparent; /* Thumb color and transparent track */
+}

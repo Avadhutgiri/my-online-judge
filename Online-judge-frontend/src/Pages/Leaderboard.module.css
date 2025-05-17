@@ -1,0 +1,144 @@
+.pageContainer {
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+    margin: 0 auto;
+    background: transparent;
+    border: #0C091F;
+    color: white;
+  }
+  
+  .container {
+    width: 100%;
+  }
+  
+  .tableContainer {
+    width: 100%;
+    overflow: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table {
+    margin-top: 20px;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 2px solid #86C232;
+    border-radius: 5px;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  
+  thead th {
+    border-bottom: 2px solid #86C232;
+    font-size: 1.2em;
+    padding: 15px;
+    font-weight: 100;
+    font-family: "Orbitron", sans-serif;
+  }
+  
+  thead tr:first-child th:first-child {
+    border-radius: 5px 0 0 5px;
+  }
+  
+  thead tr:first-child th:last-child {
+    border-radius: 0 5px 5px 0;
+  }
+  
+  tbody td {
+    padding: 15px;
+    text-align: center;
+  }
+  
+  .navContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    margin-top: 10px;
+  }
+  
+  .navButton {
+    background-color: #ffffff;
+    border: 2px solid #86C232;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    color: black;
+    transition: background-color 0.3s ease;
+  }
+  
+  .navButton:disabled {
+    background-color: #ffffff;
+    border: 2px solid #86C232;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  
+  .navIndicator {
+    color: #86C232;
+    margin: 0 20px;
+  }
+  
+  .questionHeader,
+  .questionValue {
+    display: table-cell;
+  }
+  
+  .dropdownHeader,
+  .dropdownContent {
+    display: none;
+  }
+  
+  @media (max-width: 997px) {
+    .questionHeader,
+    .questionValue {
+      display: none;
+    }
+  
+    .dropdownHeader,
+    .dropdownContent {
+      display: table-cell;
+    }
+  
+    .dropdownContent select {
+      width: 100%;
+      padding: 5px;
+      border-radius: 5px;
+      border: none;
+      background: linear-gradient(to bottom, #2A2255, #0C091F);
+      color: #ffffff;
+      font-size: 1em;
+      outline: none;
+    }
+  }
+  
+  @media (max-width: 670px) {
+    thead th {
+      font-size: 1em;
+    }
+  
+    tbody td {
+      padding: 10px;
+    }
+  
+    .table {
+      font-size: 0.9em;
+      width: 100%;
+    }
+  }
+  
+  .h1 {
+    margin: 0;
+    padding: 20px;
+    font-size: 2em;
+    font-family: "Orbitron", sans-serif;
+    text-align: center;
+  }
+  
+  .noData {
+    text-align: center;
+    padding: 20px;
+    color: #ffffff;
+  }
+  

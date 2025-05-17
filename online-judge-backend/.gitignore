@@ -1,0 +1,12 @@
+node_modules/
+.env
+*.log
+testcases/
+submissions/
+.DS_Store
+Dummy.js
+a.py
+test.py
+workers/__pycache__/
+workers/try.py
+problems/
