@@ -69,7 +69,11 @@ exports.getProblem = async (req, res) => {
                 input: sample.input,
                 output: sample.output,
                 explanation: sample.explanation
-            }))
+            })),
+            time_limit: problem.time_limit,
+            memory_limit: problem.memory_limit,
+            test_case_path: problem.test_case_path,
+            solution: problem.solution
         };
 
         res.json(response);

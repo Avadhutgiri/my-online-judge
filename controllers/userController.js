@@ -40,6 +40,7 @@ exports.registerUser = async (req, res) => {
 
         //  Update the user with their solo team ID
         await newUser.update({ team_id: soloTeam.id });
+        await soloTeam.update({ user1_id: newUser.id });
 
         res.status(201).json({ message: 'User registered successfully!', user: newUser.username });
 

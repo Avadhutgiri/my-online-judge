@@ -37,6 +37,11 @@ const User = sequelize.define('User', {
     team_id: {
         type: DataTypes.INTEGER,
         allowNull: true
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: DataTypes.NOW
     }
 }, {
     timestamps: false,

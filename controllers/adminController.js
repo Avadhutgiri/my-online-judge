@@ -81,6 +81,8 @@ exports.getAllUsers = async (req, res) => {
                 "email",
                 "is_junior",
                 "event_name",
+                "role",
+                "created_at",
             ],
         });
         res.json(users);
@@ -97,6 +99,8 @@ exports.getAllTeams = async (req, res) => {
             attributes: [
                 "id",
                 "team_name",
+                "user1_id",
+                "user2_id",
                 "event_name",
                 "is_junior",
                 "score",
@@ -104,15 +108,64 @@ exports.getAllTeams = async (req, res) => {
                 "wrong_submission",
                 "first_solve_time",
             ],
+            include: [
+                {
+                    model: User,
+                    as: 'Users',
+                    attributes: ['id', 'username', 'email']
+                }
+            ]
         });
-        res.json(teams);
+        res.json({ teams });
     } catch (error) {
         res.status(500).json({ error: "Error fetching teams", details: error.message });
     }
 }
-
-// Get all submissions filter by event_name and category
+exports.getAllProblems = async (req, res) => {
+    try {
+        const problems = await Problem.findAll({
+            attributes: [
+                "id",
+                "title",
+                "is_junior",
+                "event_name",
+                "created_at",
+                "test_case_path",
+            ],
+        });
+        res.json(problems);
+    } catch (error) {
+        res.status(500).json({ error: "Error fetching problems", details: error.message });
+    }
+}
+// Get all submissions without filters
 exports.getAllSubmissions = async (req, res) => {
+    try {
+        console.log("getAllSubmissions");
+        const submissions = await Submission.findAll({
+            include: [
+                {
+                    model: Problem,
+                    as: 'Problem',
+                    attributes: ['title']
+                },
+                {
+                    model: Team,
+                    as: 'Team',
+                    attributes: ['team_name']
+                }
+            ],
+            attributes: ['id', 'team_id', 'problem_id', 'result', 'execution_time', 'memory_usage', 'submitted_at', 'code']
+        });
+        console.log(submissions);
+        res.json(submissions);
+    } catch (error) {
+        res.status(500).json({ error: "Error fetching submissions", details: error.message });
+    }
+}
+
+// Get submissions filtered by event_name and is_junior
+exports.getSubmissionsByEvent = async (req, res) => {
     try {
         const { event_name, is_junior } = req.query;
 
@@ -137,7 +190,31 @@ exports.getAllSubmissions = async (req, res) => {
     }
 }
 
+// Get submissions filtered by team_id
+exports.getSubmissionsByTeam = async (req, res) => {
+    try {
+        const { team_id } = req.query;
 
+        const submissions = await Submission.findAll({
+            include: [
+                {
+                    model: Problem,
+                    attributes: ['title']
+                },
+                {
+                    model: Team,
+                    attributes: ['team_name']
+                }
+            ],
+            where: { team_id },
+            attributes: ['id', 'problem_id', 'result', 'execution_time', 'memory_usage', 'created_at']
+        });
+
+        res.json(submissions);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching submissions', details: error.message });
+    }
+}
 
 exports.addProblem = async (req, res) => {
     try {
@@ -250,7 +327,6 @@ exports.addSolution = async (req, res) => {
         res.status(500).json({ error: "Error uploading solution", details: error.message });
     }
 }
-
 exports.uploadTestcases = async (req, res) => {
     try {
         const { problem_id } = req.body;
@@ -304,32 +380,6 @@ exports.getTeams = async (req, res) => {
     } catch (error) {
         console.error("Error fetching teams with users:", error);
         res.status(500).json({ status: "error", message: "Internal Server Error" });
-    }
-}
-
-// Get all submissions filter by team_id
-exports.getSubmissions = async (req, res) => {
-    try {
-        const { team_id } = req.query;
-
-        const submissions = await Submission.findAll({
-            include: [
-                {
-                    model: Problem,
-                    attributes: ['title']
-                },
-                {
-                    model: Team,
-                    attributes: ['team_name']
-                }
-            ],
-            where: { team_id },
-            attributes: ['id', 'problem_id', 'result', 'execution_time', 'memory_usage', 'created_at']
-        });
-
-        res.json(submissions);
-    } catch (error) {
-        res.status(500).json({ error: 'Error fetching submissions', details: error.message });
     }
 }
 

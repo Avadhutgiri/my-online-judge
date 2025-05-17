@@ -16,8 +16,9 @@ def decode(encoded_str):
     return base64.b64decode(encoded_str).decode('utf-8')
 
 
-base_dir = "/home/thefallenone/online-judge-backend/"
-
+# base_dir = "/home/thefallenone/online-judge-backend/"
+# base_dir = os.getenv('BASE_DIR', '/home/phoenix-heart/Online-judge/online-judge-backend')
+base_dir = '/home/phoenix-heart/Online-judge/online-judge-backend'
 # Language configuration
 LANGUAGE_CONFIG = {
     "python": {
@@ -140,7 +141,7 @@ def execute_code_in_docker(submission_id, work_dir, run_cmd, input_file, output_
     input_file_rel = os.path.relpath(input_file, work_dir)
     output_file_rel = os.path.relpath(output_file, work_dir)
     work_dir = os.path.join(base_dir, "submissions",f"submission_{submission_id}")
-
+    print(work_dir)
     container_name = f"submission_{submission_id}_runner"
 
     docker_cmd = [
@@ -191,6 +192,9 @@ def execute_code_in_docker(submission_id, work_dir, run_cmd, input_file, output_
 
 
 def prepare_inputs_and_outputs(input_path, work_dir):
+    print("hereeeeeeeeee in prepare_inputs_and_outputs")
+    print(input_path)
+    print(os.listdir(input_path))
     for file in os.listdir(input_path):
         if file.startswith("input") and file.endswith(".txt"):
             shutil.copy(
@@ -217,7 +221,8 @@ def prepare_inputs_and_outputs(input_path, work_dir):
             "status": "failed",
             "message": "Test case and output file count mismatch",
         }
-
+    print("treset3",test_case_paths)
+    print("treset4",expected_output_paths)
     return (test_case_paths, expected_output_paths), None
 
 
@@ -447,6 +452,7 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
             "failed_test_case": None
         }
         code = decode(code)
+        print(code)
 
         if not isinstance(problem_id, str):
             problem_id = str(problem_id)
@@ -458,6 +464,7 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
             return result
 
         work_dir = prepare_submission_directory(submission_id)
+        print("hereeeeeeeeee")
         if language == "java":
             classname = java_classname or extract_java_classname(code)
 
@@ -471,9 +478,11 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
         else:
             filename = f"submission_{submission_id}{config['extension']}"
             exec_name = f"submission_{submission_id}_exec"
-
+        print("hereeeeeee2eee")
         with open(os.path.join(work_dir, filename), "w") as f:
             f.write(code)
+        
+        print("hereeeeeee3eee")
 
         compile_result = compile_code(work_dir, filename, exec_name, language)
         if compile_result["status"] != "success":
@@ -484,6 +493,8 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
         (test_case_paths, expected_output_paths), error = prepare_inputs_and_outputs(
             input_path, work_dir
         )
+        print("treset",test_case_paths)
+        print("treset2",expected_output_paths)
         if error:
             result.update({"status": "failed", "message": error["message"]})
             return result

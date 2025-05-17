@@ -44,6 +44,11 @@ const Team = sequelize.define('Team',{
         type: DataTypes.DATE,
         allowNull: true,
     },
+    created_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: DataTypes.NOW
+    }
 },
 {
     timestamps: false,

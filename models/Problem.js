@@ -51,6 +51,11 @@ const Problem = sequelize.define('Problem', {
     memory_limit: {
         type: DataTypes.INTEGER,
         defaultValue: 256
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: DataTypes.NOW
     }
 }, {
     timestamps: false
