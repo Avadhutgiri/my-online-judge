@@ -75,6 +75,7 @@ services:
     working_dir: /app
     command: celery -A workers.tasks worker --loglevel=${LOG_LEVEL} --concurrency=${WORKER_CONCURRENCY}
     environment:
+      BASE_DIR: ${BASE_DIR}
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
       BACKEND_HOST: ${BACKEND_HOST}
