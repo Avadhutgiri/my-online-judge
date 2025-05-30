@@ -10,3 +10,11 @@ test.py
 workers/__pycache__/
 workers/try.py
 problems/
+
+# Ignore all Let's Encrypt certs and keys
+certbot/conf/archive/
+certbot/conf/accounts/
+certbot/conf/live/
+certbot/conf/renewal/
+certbot/conf/renewal-hooks/
+*.pem

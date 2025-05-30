@@ -28,14 +28,38 @@ WEBHOOK_URL_SYSTEM = f'http://{BACKEND_HOST}:{BACKEND_PORT}/webhook/system'
 
 # Configure Celery
 app = Celery('tasks', broker=CELERY_BROKER_URL,backend=CELERY_RESULT_BACKEND)
+app.conf.broker_heartbeat = 10
+app.conf.broker_connection_timeout = 30
+app.conf.worker_max_tasks_per_child = 100  # auto-restarts workers after 100 tasks
+app.conf.worker_prefetch_multiplier = 1
+app.conf.task_acks_late = True
 
 # Configure Redis client
 redis_client = Redis(
-    host=REDIS_HOST, 
-    port=REDIS_PORT, 
-    db=0, 
-    decode_responses=True
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    db=0,
+    decode_responses=True,
+    socket_connect_timeout=5,
+    socket_timeout=5,
 )
+def reconnect_redis():
+    """Reinitialize the Redis client if connection drops."""
+    global redis_client
+    try:
+        redis_client = Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=0,
+            decode_responses=True,
+            socket_connect_timeout=5,
+            socket_timeout=5,
+        )
+        redis_client.ping()
+        print(" Redis connection re-established.")
+    except Exception as e:
+        print(f" Redis reconnection failed: {e}")
+
 
 def store_run_result(submission_id, result):
     """Store the run result temporarily in Redis for 10 minutes."""
@@ -49,16 +73,29 @@ def decode(encoded_str):
     """Decode a base64 encoded string."""
     return base64.b64decode(encoded_str).decode('utf-8')
 
+import redis.exceptions
+
 def fetch(queue):
-    """Fetch an item from the Redis queue."""
     try:
         result = redis_client.brpop(queue, timeout=5)
         if result:
-            print(f"Fetched item from {queue}")
+            print(f" Fetched item from {queue}")
+        else:
+            print(f"No item fetched from {queue} (timeout reached, queue likely empty).")
         return result
-    except Exception as e:
-        print(f"Error fetching from queue: {e}")
+    except redis.exceptions.ConnectionError as e:
+        print(f"Redis connection error on queue {queue}: {e}")
+        reconnect_redis()
         return None
+    except redis.exceptions.TimeoutError as e:
+        # This is a normal idle timeout from socket — DO NOT reconnect
+        print(f"Redis timeout waiting on {queue} (but connection is fine).")
+        return None
+    except Exception as e:
+        print(f"Unexpected Redis error on queue {queue}: {e}")
+        reconnect_redis()
+        return None
+
 
 def send_webhook_result(url, result):
     """Send the execution result to the specified webhook URL."""
@@ -152,6 +189,11 @@ def process(queue):
         print(f"Error processing task: {e}")
         raise
 
+# Health check task
+@app.task(name="tasks.health")
+def health_check():
+    return "OK"
+
 # Configure celery beat schedule
 app.conf.beat_schedule = {
     'process-run-queue': {
@@ -171,3 +213,4 @@ app.conf.beat_schedule = {
         'args': (RUN_SYSTEM_QUEUE,)
     }
 }
+

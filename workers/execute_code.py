@@ -37,7 +37,7 @@ LANGUAGE_CONFIG = {
     },
     "java": {
         "extension": ".java",
-        "image": "openjdk:17-jdk-slim",
+        "image": "openjdk:17-jdk-alpine",
         "compile_cmd": "javac {filename}",
         "run_command": "java {classname}",
         "timeout": 5,
