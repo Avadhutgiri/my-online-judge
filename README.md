@@ -2,7 +2,7 @@
 
 A comprehensive online competitive programming platform built with Node.js and Express.js, designed to host programming contests, manage submissions, and provide real-time leaderboards.
 
-🌐 **Live Demo**: [frontendavadhut.duckdns.org](https://www.cpcoders.duckdns.org)  
+🌐 **Live Demo**: [www.cpcoders.duckdns.org](https://www.cpcoders.duckdns.org)  
 🎨 **Frontend Repository**: [online-judge-frontend](https://github.com/Avadhutgiri/online-judge-frontend)
 
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
@@ -425,7 +425,7 @@ If you encounter any issues or have questions:
 ## 🔗 Related Repositories
 
 - **Frontend**: [online-judge-frontend](https://github.com/Avadhutgiri/online-judge-frontend) - React-based frontend application
-- **Live Demo**: [frontendavadhut.duckdns.org](www.cpcoders.duckdns.org) - Experience the platform in action
+- **Live Demo**: [www.cpcoders.duckdns.org](www.cpcoders.duckdns.org) - Experience the platform in action
 
 ---
 
