@@ -155,7 +155,7 @@ exports.getAllSubmissions = async (req, res) => {
                     attributes: ['team_name']
                 }
             ],
-            attributes: ['id', 'team_id', 'problem_id', 'result', 'execution_time', 'memory_usage', 'submitted_at', 'code']
+            attributes: ['id', 'team_id', 'problem_id', 'result',  'submitted_at', 'code','language']
         });
         console.log(submissions);
         res.json(submissions);

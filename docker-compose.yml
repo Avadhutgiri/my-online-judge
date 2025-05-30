@@ -1,0 +1,176 @@
+# ── online-judge-backend/docker-compose.yml ─────────────────────────────
+version: "3.9"
+
+networks:
+  judge_net:
+
+volumes:
+  pgdata:
+  certbot-etc:
+  certbot-var:
+
+services:
+  # one-shot cert request (runs first, exits)
+  init-certbot:
+    image: certbot/certbot
+    container_name: init-certbot
+    depends_on:
+      - nginx
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    endpoint: >
+      sh -c "
+        if [ ! -f /etc/letsencrypt/live/${DOMAIN}/fullchain.pem ]; then
+          echo 'No certificate found for ${DOMAIN}. Requesting one...'
+          certbot certonly --webroot --webroot-path=/var/lib/letsencrypt
+          --email ${EMAIL}
+          --agree-tos
+          --no-eff-email
+          --non-interactive
+          -d ${DOMAIN}
+        else
+          echo 'Certificate already exists for ${DOMAIN}.'
+        fi
+      "
+    networks: [judge_net]
+
+  # ───────────────────── BACKEND ─────────────────────
+  backend:
+    build: .
+    container_name: online-judge-backend
+    restart: always
+    ports: ["5000:5000"]
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      JWT_SECRET: ${JWT_SECRET}
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      db:              { condition: service_healthy }
+      redis:           { condition: service_healthy }
+      celery_worker:   { condition: service_started   }
+      celery_beat:     { condition: service_started   }
+    volumes:
+      - .:/app:z
+      - /app/node_modules
+    working_dir: /app
+    command: node server.js     # production command
+    networks: [judge_net]
+
+  # ───────────────────── DATABASE ────────────────────
+  db:
+    image: postgres:14-alpine
+    container_name: online-judge-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [judge_net]
+
+  # ───────────────────── REDIS ───────────────────────
+  redis:
+    image: redis:alpine
+    container_name: online-judge-redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [judge_net]
+
+  # ─────────────────── CELERY WORKER ─────────────────
+  celery_worker:
+    build: { context: ./workers, dockerfile: Dockerfile }
+    container_name: online-judge-celery-worker
+    restart: always
+    depends_on: { redis: { condition: service_healthy } }
+    volumes:
+      - ./workers:/app/workers:z
+      - ./problems:/app/problems:z
+      - ./submissions:/app/submissions:z
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app
+    command: >
+      celery -A workers.tasks worker
+             --loglevel=${LOG_LEVEL:-info}
+             --concurrency=${WORKER_CONCURRENCY:-4}
+    environment:
+      BASE_DIR: ${BASE_DIR}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BACKEND_HOST: backend
+      BACKEND_PORT: 5000
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    networks: [judge_net]
+
+  # ─────────────────── CELERY BEAT ───────────────────
+  celery_beat:
+    build: { context: ./workers, dockerfile: Dockerfile }
+    container_name: online-judge-celery-beat
+    restart: always
+    depends_on: { redis: { condition: service_healthy } }
+    volumes:
+      - ./workers:/app/workers:z
+    working_dir: /app
+    command: >
+      celery -A workers.tasks beat
+             --loglevel=${LOG_LEVEL:-info}
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BACKEND_HOST: backend
+      BACKEND_PORT: 5000
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    networks: [judge_net]
+
+  # ───────────────────── NGINX ───────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: online-judge-nginx
+    restart: always
+    #depends_on:
+      #init-certbot: { condition: service_completed_successfully }
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    networks: [judge_net]
+
+  # ────────────────── CERTBOT RENEW ──────────────────
+  certbot-renew:
+    image: certbot/certbot
+    container_name: certbot-renew
+    restart: unless-stopped
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    entrypoint: >
+      sh -c "
+        trap exit TERM;
+        while :; do
+          certbot renew --webroot -w /var/lib/letsencrypt --quiet;
+          echo '🔄 Renewed at' $(date);
+          sleep 12h & wait $${!};
+        done
+      "
+    networks: [judge_net]
+# ─────────────────────────────────────────────────────

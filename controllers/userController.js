@@ -8,13 +8,34 @@ exports.registerUser = async (req, res) => {
         console.log(req.body); // Debug incoming request body
         const { username, email, password, is_junior, event_name } = req.body;
 
-        if (typeof password !== 'string') {
-            return res.status(400).json({ error: 'Password must be a string' });
+        // Input validation
+        if (!username || !email || !password || is_junior === undefined || !event_name) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        if (typeof password !== 'string' || password.length < 6) {
+            return res.status(400).json({ error: 'Password must be a string and at least 6 characters long' });
+        }
+
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Username format validation
+        if (username.length < 3 || username.length > 20) {
+            return res.status(400).json({ error: 'Username must be between 3 and 20 characters' });
         }
 
         const checkUser = await User.findOne({ where: { username, is_junior, event_name } });
         if (checkUser) {
-            return res.status(400).json({ error: 'User already exists' });
+            return res.status(400).json({ error: 'Username already exists for this event and category' });
+        }
+
+        const checkEmail = await User.findOne({ where: { email } });
+        if (checkEmail) {
+            return res.status(400).json({ error: 'Email already registered' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -42,10 +63,25 @@ exports.registerUser = async (req, res) => {
         await newUser.update({ team_id: soloTeam.id });
         await soloTeam.update({ user1_id: newUser.id });
 
-        res.status(201).json({ message: 'User registered successfully!', user: newUser.username });
+        res.status(201).json({ 
+            message: 'User registered successfully!', 
+            user: {
+                username: newUser.username,
+                email: newUser.email,
+                event_name: newUser.event_name,
+                is_junior: newUser.is_junior
+            }
+        });
 
     } catch (error) {
-        res.status(400).json({ error: 'Error registering user', details: error.message });
+        console.error('Registration error:', error);
+        if (error.name === 'SequelizeValidationError') {
+            return res.status(400).json({ 
+                error: 'Validation error', 
+                details: error.errors.map(e => e.message)
+            });
+        }
+        res.status(500).json({ error: 'Error registering user', details: error.message });
     }
 };
 
@@ -109,45 +145,49 @@ exports.Login = async (req, res) => {
     try {
         const { username, password, team_login, team_name, event_name } = req.body;
 
+        // Input validation
+        if (!username || !password || !event_name) {
+            return res.status(400).json({ error: 'Username, password, and event_name are required' });
+        }
+
         if (team_login === undefined) {
-            return res.status(400).json({ error: "The 'team_login' field is required (true or false)." });
+            return res.status(400).json({ error: "The 'team_login' field is required (true or false)" });
         }
 
         let user;
 
         if (team_login) {
             if (!team_name) {
-                return res.status(400).json({ error: "Team login requires 'team_name' to be provided." });
+                return res.status(400).json({ error: "Team login requires 'team_name' to be provided" });
             }
             const team = await Team.findOne({ where: { team_name, event_name } });
             if (!team) {
-                return res.status(404).json({ error: "Team not found. Please register first." });
+                return res.status(404).json({ error: "Team not found. Please register first" });
             }
 
-            user = await User.findOne({ where: { username, team_id: team.id, event_name:event_name } });
+            user = await User.findOne({ where: { username, team_id: team.id, event_name } });
 
             if (!user) {
-                return res.status(404).json({ error: "User not found in this team." });
+                return res.status(404).json({ error: "User not found in this team" });
             }
         } else {
             user = await User.findOne({ where: { username, event_name } });
 
+            if (!user) {
+                return res.status(404).json({ error: "User not found. Please register first" });
+            }
+
             const checkTeam = await Team.findByPk(user.team_id);
 
-            if (checkTeam.user2_id){
-                return res.status(400).json({ error: "User is already part of a team. Please login as a team." });
-            }
-
-            if (!user) {
-                return res.status(404).json({ error: "User not found. Please register first." });
+            if (checkTeam && checkTeam.user2_id) {
+                return res.status(400).json({ error: "User is already part of a team. Please login as a team" });
             }
         }
-
 
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(400).json({ error: "Invalid password." });
+            return res.status(401).json({ error: "Invalid username or password" });
         }
 
         const token = jwt.sign(
@@ -161,18 +201,39 @@ exports.Login = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: "2h" }
         );
+
+        // Get cookie settings from environment variables
+        const domain = process.env.COOKIE_DOMAIN || 'localhost';
+        const isSecure = process.env.COOKIE_SECURE === 'true';
+        const sameSite = process.env.COOKIE_SAME_SITE || 'Lax';
+
+        console.log('Cookie settings:', {
+            domain,
+            isSecure,
+            sameSite,
+            frontendUrl: process.env.FRONTEND_URL
+        });
+
         res.cookie("token", token, {
             httpOnly: true,    // Prevents JavaScript access
-            secure: false, // Secure only in production
-            sameSite: "Lax", // Helps prevent CSRF attacks
-            maxAge: 2 * 60 * 60 * 1000
+            secure: isSecure,  // Set via environment variable
+            sameSite: sameSite, // Set via environment variable
+            domain: domain,    // Set domain based on environment
+            path: '/',         // Cookie available for all paths
+            maxAge: 2 * 60 * 60 * 1000, // 2 hours
+            credentials: 'include' // Required for cross-origin requests
         });
+
+        console.log('Response headers:', res.getHeaders());
 
         return res.status(200).json({
             message: "User logged in successfully",
-            token: token,
-            user: user.username,
-            team_name: team_login ? team_name : null 
+            user: {
+                username: user.username,
+                event_name: user.event_name,
+                is_junior: user.is_junior,
+                team_name: team_login ? team_name : null
+            }
         });
 
     } catch (error) {

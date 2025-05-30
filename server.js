@@ -18,14 +18,21 @@ app.use(cookieParser())
 const PORT = process.env.PORT || 5000;
 const cors = require("cors");
 
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',') 
+    : ["http://localhost:5173", "http://localhost:3000"];
 
-// Set CORS TO public
-app.use(
-    cors({
-      origin: ["http://localhost:5173","http://localhost:3000"], // Update this to match frontend URL
-      credentials: true, // Allow credentials (cookies)
-    })
-  );
+const corsOptions = {
+    origin: allowedOrigins,
+    credentials: true, // Allow credentials (cookies)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['set-cookie']
+};
+
+app.use(cors(corsOptions));
+
 // Sync database at server start (optional)
 (async () => {
     await syncDB();
