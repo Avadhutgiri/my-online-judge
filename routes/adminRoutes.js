@@ -39,7 +39,10 @@ router.post("/register-admin", adminController.registerAdmin);
 
 router.post("/login", adminController.loginAdmin);
 
+router.get("/problems", adminAuthenticate, adminController.getAllProblems);
 router.get("/users", adminAuthenticate, adminController.getAllUsers);
+
+router.get("/teams", adminAuthenticate, adminController.getAllTeams);
 
 router.post("/problems", adminAuthenticate, adminController.addProblem);
 
@@ -48,11 +51,14 @@ router.put("/problems/:id", adminAuthenticate, adminController.putProblem);
 router.delete("/problems/:id", adminAuthenticate, adminController.deleteProblem);
 
 router.post('/upload-testcases', adminAuthenticate, upload.array('files'), adminController.uploadTestcases);
+router.post('/upload-solution', adminAuthenticate, upload.array('files'), adminController.addSolution);
 
+// Submission routes
 router.get("/submissions", adminAuthenticate, adminController.getAllSubmissions);
+router.get("/submissions/event", adminAuthenticate, adminController.getSubmissionsByEvent);
+router.get("/submissions/team", adminAuthenticate, adminController.getSubmissionsByTeam);
 
-router.get("/stats", adminAuthenticate, adminController.getStats);
+// router.get("/stats", adminAuthenticate, adminController.getStats);
 
-// router.post("/add-solution/", adminAuthenticate, upload.array('files'), adminController.addSolution);
 
 module.exports = router;

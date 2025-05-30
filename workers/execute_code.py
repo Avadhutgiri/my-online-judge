@@ -4,6 +4,7 @@ import subprocess
 import logging
 import re
 import base64
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -15,8 +16,8 @@ def decode(encoded_str):
     return base64.b64decode(encoded_str).decode('utf-8')
 
 
-base_dir = "/home/thefallenone/online-judge-backend/"
-
+# base_dir = "/home/thefallenone/online-judge-backend/"
+base_dir = os.getenv('BASE_DIR', '/home/phoenix-heart/Online-judge/online-judge-backend')
 # Language configuration
 LANGUAGE_CONFIG = {
     "python": {
@@ -36,19 +37,18 @@ LANGUAGE_CONFIG = {
     },
     "java": {
         "extension": ".java",
-        "image": "openjdk:11-jdk",
+        "image": "openjdk:17-jdk-slim",
         "compile_cmd": "javac {filename}",
         "run_command": "java {classname}",
         "timeout": 5,
         "memory_limit": 256,  # MB
-    },
+    }
 }
 
 
 # Helper functions
 def prepare_submission_directory(submission_id):
-    work_dir = os.path.join(os.getcwd(), "submissions",
-                            f"submission_{submission_id}")
+    work_dir = os.path.join(os.getcwd(), "submissions", f"submission_{submission_id}")
     os.makedirs(work_dir, exist_ok=True)
     os.makedirs(os.path.join(work_dir, "inputs"), exist_ok=True)
     os.makedirs(os.path.join(work_dir, "outputs"), exist_ok=True)
@@ -57,8 +57,7 @@ def prepare_submission_directory(submission_id):
 
 
 def cleanup_submission_directory(submission_id):
-    work_dir = os.path.join(os.getcwd(), "submissions",
-                            f"submission_{submission_id}")
+    work_dir = os.path.join(os.getcwd(), "submissions", f"submission_{submission_id}")
     if os.path.exists(work_dir):
         shutil.rmtree(work_dir)
 
@@ -83,45 +82,74 @@ def compile_code(work_dir, filename, exec_name, language):
         return {"status": "success"}
 
     config = LANGUAGE_CONFIG[language]
-    compile_cmd = config["compile_cmd"].format(
-        exec_name=exec_name, filename=filename)
+
+    # Java Compilation Fix: Don't use exec_name in compile_cmd
+    if language == "java":
+        compile_cmd = config["compile_cmd"].format(filename=filename)
+    else:
+        compile_cmd = config["compile_cmd"].format(exec_name=exec_name, filename=filename)
+
     try:
+        logging.info(f"Compiling {language} file: {filename} in {work_dir}")
+
         subprocess.run(compile_cmd, shell=True, check=True, cwd=work_dir,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
+                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         return {"status": "success"}
     except subprocess.CalledProcessError as e:
+        logging.error(f"Compilation failed for {language}: {e.stderr.decode()}")
         return {"status": "compilation_error", "message": e.stderr.decode()}
 
 
 def execute_code_in_docker(submission_id, work_dir, run_cmd, input_file, output_file, image, timeout, memory_limit):
     input_file_rel = os.path.relpath(input_file, work_dir)
     output_file_rel = os.path.relpath(output_file, work_dir)
-    work_dir = os.path.join(base_dir, "submissions",
-                            f"submission_{submission_id}")
+    work_dir = os.path.join(base_dir, "submissions", f"submission_{submission_id}")
+    container_name = f"submission_{submission_id}_runner"
+
     docker_cmd = [
-        "docker", "run", "--rm",
+        "docker", "run",
+        "--rm",
         f"--memory={memory_limit}m", "--cpus=1",
+        "--name", container_name,  # Assign a name to the container
         "-v", f"{work_dir}:/app", "-w", "/app", image, "sh", "-c",
-        f"({run_cmd} < {input_file_rel} > {output_file_rel} 2>&1);"
+        f"timeout {timeout}s {run_cmd} < {input_file_rel} > {output_file_rel} 2>&1;"
     ]
 
     logging.info(f"Executing Docker command: {' '.join(docker_cmd)}")
-    try:
-        result = subprocess.run(docker_cmd, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, timeout=timeout, shell=False)
 
-        if result.returncode == 137:
+    try:
+        process = subprocess.Popen(docker_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Wait for process to finish or timeout
+        start_time = time.time()
+        while process.poll() is None:
+            if time.time() - start_time > timeout:
+                logging.error(f"Process timeout, force stopping container: {container_name}")
+                subprocess.run(["docker", "kill", container_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                return {"status": "Time Limit Exceeded", "message": "Time Limit Exceeded"}
+            time.sleep(0.1)
+
+        stdout, stderr = process.communicate()
+
+        # Check for Memory Limit Exceeded (Docker exit code 137 or 'Killed' in stderr)
+        stderr_text = stderr.decode().strip()
+        if process.returncode == 137 or "Killed" in stderr_text or "Out of memory" in stderr_text:
             return {
                 "status": "memory_limit_exceeded",
                 "message": "Memory Limit Exceeded",
             }
-        if result.stderr.decode().strip():
+
+        if stderr_text:
             return {
                 "status": "Runtime Error",
-                "message": result.stderr.decode().strip(),
+                "message": stderr_text,
             }
+
         return {"status": "success"}
+
     except subprocess.TimeoutExpired:
+        logging.error(f"Timeout expired, force stopping container: {container_name}")
+        subprocess.run(["docker", "kill", container_name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return {"status": "Time Limit Exceeded", "message": "Time Limit Exceeded"}
 
 
@@ -152,7 +180,6 @@ def prepare_inputs_and_outputs(input_path, work_dir):
             "status": "failed",
             "message": "Test case and output file count mismatch",
         }
-
     return (test_case_paths, expected_output_paths), None
 
 
@@ -194,7 +221,7 @@ def execute_reference_solution(problemid, submission_id, work_dir, input_file):
             return f"[Compilation Error] {compile_result.stderr.decode().strip()}"
         # work_dir = "/home/thefallenone/online-judge-backend/submissions/submission_" + str(submission_id)
         work_dir = os.path.join(base_dir, "submissions",
-                                f"submission_{submission_id}")
+                               f"submission_{submission_id}")
         logging.info("Compilation successful.")
         logging.info(f"Input file relative path: {input_file_relative}")
         # Run the compiled executable inside Docker
@@ -233,17 +260,12 @@ def execute_reference_solution(problemid, submission_id, work_dir, input_file):
 
 
 # Main run function
-def run(submission_id, code, language, problem_id, event_name, inputData=None):
+def run(submission_id, code, language, problem_id, inputData=None):
     try:
-        print(problem_id)
         code = decode(code)
         if not isinstance(problem_id, str):
             problem_id = str(problem_id)
 
-        logging.info(
-            f"Starting Run for Submission ID: {submission_id}, Event: {event_name}")
-
-        # Prepare the submission directory
         work_dir = prepare_submission_directory(submission_id)
         classname = None
 
@@ -258,33 +280,21 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
             with open(sample_input_path, "r") as sample_file:
                 inputData = sample_file.read()
 
-        # Save input data to file
         logging.info("Saving custom input data")
         with open(input_file, "w") as f:
             f.write(inputData)
-
-        # Check for Reverse Coding with empty code
-        if event_name == "Reverse Coding" and not code.strip():
-            logging.info(
-                "User code is empty; returning only expected output for Reverse Coding.")
-            ref_path = os.path.join("problems", problem_id, "solution.cpp")
-            logging.info(f"Executing reference solution: {ref_path}")
-            expected_output = execute_reference_solution(
-                problem_id, submission_id, work_dir, input_file)
-            return {"expected_output": expected_output}
 
         config, error = validate_and_configure(language)
         if error:
             return {"status": "Failed", "user_output": "Unsupported programming language."}
 
-        # Save and compile user code
         if language == "java":
             classname = extract_java_classname(code)
             if not classname:
                 return {"status": "Compilation Error", "user_output": "No public class found in Java code."}
 
             filename = f"{classname}{config['extension']}"
-            exec_name = classname  # For Java, the exec name is the classname
+            exec_name = classname
         else:
             filename = f"submission_{submission_id}{config['extension']}"
         exec_name = f"submission_{submission_id}_exec"
@@ -296,15 +306,7 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
         logging.info("Compiling user code if necessary")
         compile_result = compile_code(work_dir, filename, exec_name, language)
         if compile_result["status"] != "success":
-            logging.warning("User code compilation failed.")
-            expected_output = None
-            if event_name == "Reverse Coding":
-                ref_path = os.path.join("problems", problem_id, "solution.cpp")
-                logging.info(f"Executing reference solution: {ref_path}")
-                print(ref_path, work_dir, input_file)
-                expected_output = execute_reference_solution(
-                    problem_id, submission_id, work_dir, input_file)
-            return {"status": "Compilation Error", "user_output": compile_result.get("message", "Compilation failed."), "expected_output": expected_output}
+            return {"status": "Compilation Error", "user_output": compile_result.get("message", "Compilation failed.")}
         logging.info("Compilation Successfull")
 
         output_file = os.path.join(work_dir, "outputs", "custom_output.txt")
@@ -330,21 +332,14 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
         )
         logging.info("We are after execute_code_in_docker %s",
                      exec_result["status"])
-        # Handle execution errors
         if exec_result["status"] != "success":
             logging.warning(f"User code execution failed with status")
-            expected_output = None
-            if event_name == "Reverse Coding":
-                expected_output = execute_reference_solution(
-                    problem_id, submission_id, work_dir, input_file)
             return {"status": exec_result["status"],
-                    "user_output": exec_result.get("message", "An error occurred during execution."),
-                    "expected_output": expected_output
+                    "user_output": exec_result.get("message", "An error occurred during execution.")
                     }
 
-        # Read and return the user's output
         output_file = os.path.join(
-            work_dir, "outputs", "custom_output.txt")  # Ensure absolute path
+            work_dir, "outputs", "custom_output.txt")
 
         if not os.path.exists(output_file):
             logging.error(f"Output file missing at {output_file}")
@@ -354,19 +349,47 @@ def run(submission_id, code, language, problem_id, event_name, inputData=None):
         with open(output_file, "r") as f_out:
             user_output = f_out.read().strip()
         logging.info(f"User output read successfully {user_output}")
-        # Return results based on the event type
-        if event_name == "Reverse Coding":
-            expected_output = execute_reference_solution(
-                problem_id, submission_id, work_dir, input_file)
-            logging.info(f"User output read successfully {user_output}")
-            return {"status": "executed_successfully", "expected_output": expected_output, "user_output": user_output}
 
-        # For Clash event, return just the user's output
         return {"status": "executed_successfully", "user_output": user_output}
 
     except Exception as e:
         logging.error(f"An error occurred during execution: {e}")
         return {"status": "failed", "user_output": str(e)}
+
+    finally:
+        logging.info("Cleaning up submission directory")
+        cleanup_submission_directory(submission_id)
+
+
+def runSystemcode(submission_id, problem_id, inputData=None):
+    try:
+        if not isinstance(problem_id, str):
+            problem_id = str(problem_id)
+
+        work_dir = prepare_submission_directory(submission_id)
+
+        input_file = os.path.join(work_dir, "inputs", "custom_input.txt")
+        if inputData is None:
+            sample_input_path = os.path.join(
+                "problems", problem_id, "sample.txt")
+            if not os.path.exists(sample_input_path):
+                return {"status": "failed", "user_output": "Sample input file not found."}
+
+            logging.info(f"Reading sample input from {sample_input_path}")
+            with open(sample_input_path, "r") as sample_file:
+                inputData = sample_file.read()
+
+        logging.info("Saving custom input data")
+        with open(input_file, "w") as f:
+            f.write(inputData)
+
+        expected_output = execute_reference_solution(
+            problem_id, submission_id, work_dir, input_file)
+        return {"status": "executed_successfully", "expected_output": expected_output}
+
+    except Exception as e:
+        logging.error(f"An error occurred during execution: {e}")
+        return {"status": "failed", "expected_output": str(e)}
 
     finally:
         logging.info("Cleaning up submission directory")
@@ -399,11 +422,13 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
             if not classname:
                 result.update(
                     {"status": "failed", "message": "No public class found in Java code."})
+                return result
+
             filename = f"{classname}.java"
+            exec_name = classname
         else:
             filename = f"submission_{submission_id}{config['extension']}"
-
-        exec_name = f"submission_{submission_id}_exec"
+            exec_name = f"submission_{submission_id}_exec"
         with open(os.path.join(work_dir, filename), "w") as f:
             f.write(code)
 
@@ -418,7 +443,6 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
         )
         if error:
             result.update({"status": "failed", "message": error["message"]})
-
             return result
 
         for i, (test_case, expected_output) in enumerate(
@@ -432,6 +456,9 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
             else:
                 run_cmd = config["run_command"].format(filename=filename)
 
+            logging.info(f"Executing Test Case {i + 1}...")
+
+            # Run code inside Docker
             exec_result = execute_code_in_docker(
                 submission_id,
                 work_dir,
@@ -443,24 +470,51 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
                 config["memory_limit"],
             )
 
+            # If execution failed, return the error message early
+            if exec_result["status"] == "Time Limit Exceeded":
+                result.update({
+                    "status": "Time Limit Exceeded",
+                    "test_case": f"Test Case {i + 1}",
+                    "message": f"Time Limit Exceeded on Test Case {i+1}",
+                })
+                return result  # ⬅️ Stop execution immediately
+
+            if exec_result["status"] == "memory_limit_exceeded":
+                result.update({
+                    "status": "Memory Limit Exceeded",
+                    "test_case": f"Test Case {i + 1}",
+                    "message": f"Memory Limit Exceeded on Test Case {i+1}",
+                })
+                return result
             if exec_result["status"] != "success":
                 result.update({
                     "status": "failed",
                     "test_case": f"Test Case {i + 1}",
-                    "message": f"Execution failed: {exec_result['message']}",
+                    "message": f"Execution failed on Test Case {i+1}: {exec_result['message']}",
+                })
+                return result  # ⬅️ Stop execution immediately
+
+            # ✅ Ensure the output file was created before comparing outputs
+            if not os.path.exists(output_file):
+                result.update({
+                    "status": "failed",
+                    "test_case": f"Test Case {i + 1}",
+                    "message": "Output file missing. Possibly TLE or Runtime Error.",
                 })
                 return result
 
+            # ✅ Compare actual user output to expected output
             with open(output_file, "r") as f_out, open(expected_output, "r") as f_exp:
                 user_output = f_out.read().strip()
                 expected = f_exp.read().strip()
                 if user_output != expected:
                     result.update({
                         "test_case": f"Test Case {i + 1}",
-                        "status": "Wrong Answer",
+                        "status": f"Wrong Answer on Test Case {i+1}",
                     })
-                    return result
+                    return result  # ⬅️ Stop execution immediately if wrong answer
 
+        # If all test cases pass
         return result
 
     except Exception as e:

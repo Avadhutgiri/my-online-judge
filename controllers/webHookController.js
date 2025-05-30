@@ -1,12 +1,13 @@
 const Submission = require('../models/Submission');
 const Problem = require('../models/Problem');
 const User = require('../models/User');
+const Team = require('../models/Team');
 
 async function updateDatabase(submissionId, updateData) {
     console.log(`Updating database for submission ${submissionId}:`, updateData);
 
     try {
-        const { status } = updateData;
+        const { status,failed_test_case, message } = updateData;
 
         // Find submission, user, and problem records
         const submission = await Submission.findByPk(submissionId);
@@ -15,17 +16,17 @@ async function updateDatabase(submissionId, updateData) {
             return { error: `Submission ${submissionId} not found` };
         }
 
-        const user = await User.findByPk(submission.user_id);
+        const team = await Team.findByPk(submission.team_id);
         const problem = await Problem.findByPk(submission.problem_id);
 
-        if (!user || !problem) {
+        if (!team || !problem) {
             console.log(`User or Problem not found.`);
             return { error: "User or Problem not found for submission." };
         }
 
         const existingCorrectSubmission = await Submission.findOne({
             where: {
-                user_id: submission.user_id,
+                team_id: submission.team_id,
                 problem_id: submission.problem_id,
                 result: 'Accepted'
             }
@@ -33,21 +34,30 @@ async function updateDatabase(submissionId, updateData) {
 
         if (status.toLowerCase() === 'accepted') {
             if (!existingCorrectSubmission) {
-                user.score += problem.score;
-                user.correct_submission += 1;
+                team.score += problem.score;
+                team.correct_submission += 1;
             }
-            if (!user.first_solve_time) {
-                user.first_solve_time = new Date();
+            if (!team.first_solve_time) {
+                team.first_solve_time = new Date();
             }
 
         }
         else {
-            user.wrong_submission += 1;
+            team.wrong_submission += 1;
         }
 
         // Save updated records
-        await user.save();
+        await team.save();
         submission.result = status;
+        submission.result = status;
+        if (failed_test_case) {
+            submission.failed_test_case = failed_test_case;
+        }
+        if (message) {
+            submission.message = message;
+        }
+        await team.save();
+
         await submission.save();
 
         console.log(`Database updated successfully for submission ${submissionId}.`);
@@ -59,14 +69,11 @@ async function updateDatabase(submissionId, updateData) {
 }
 exports.RunWebhook = async (req, res) => {
     try {
-        const { submission_id, status, message, user_output, expected_output } = req.body;
+        const { submission_id, status, message, user_output } = req.body;
 
         if (status === "executed_successfully") {
             console.log(`Run Result: ${submission_id}`);
             console.log(`User Output: ${user_output}`);
-            if (expected_output) {
-                console.log(`Expected Output: ${expected_output}`);
-            }
         } else {
             console.log(`Run Error: ${submission_id}`);
             console.log(`Message: ${message}`);
@@ -79,11 +86,31 @@ exports.RunWebhook = async (req, res) => {
     }
 }
 
+exports.SystemWebhook = async (req, res) => {
+    try {
+        const { submission_id, status, message, expected_output } = req.body;
+
+        if (status === "executed_successfully") {
+            console.log(`Run Result: ${submission_id}`);
+            console.log(`Expected Output: ${expected_output}`);
+        } else {
+            console.log(`Run Error: ${submission_id}`);
+            console.log(`Message: ${message}`);
+        }
+
+        res.status(200).json({ message: "System webhook processed successfully." });
+    } catch (error) {
+        console.error("Error processing system webhook:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+
 exports.SubmitWebhook = async (req, res) => {
     try {
         const { submission_id, status, message, failed_test_case } = req.body;
 
-        if (status === "accepted") {
+        if (status === "Accepted") {
             console.log(`Submission Accepted: ${submission_id}`);
         } else {
             console.log(`Submission Failed: ${submission_id}`);

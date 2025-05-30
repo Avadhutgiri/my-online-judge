@@ -9,68 +9,45 @@ const User = sequelize.define('User', {
     },
     username: {
         type: DataTypes.STRING,
-        allowNull: false,
-        // unique: true
+        allowNull: false
     },
     password: {
         type: DataTypes.STRING,
         allowNull: false,
-        validate: {
-            notEmpty: true
-        }
+        validate: { notEmpty: true }
     },
     email: {
         type: DataTypes.STRING,
         allowNull: false,
-        // unique: true,
-        validate: {
-            isEmail: true
-        }
+        validate: { isEmail: true }
     },
     role: {
-        type: DataTypes.ENUM('user', 'admin'),  // Default roles
+        type: DataTypes.ENUM('user', 'admin'),
         defaultValue: 'user'
-    },
-    first_solve_time: {
-        type: DataTypes.DATE,
-        allowNull: true
-    }
-    ,
-    score: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    correct_submission: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    wrong_submission: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    time: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
     },
     is_junior: {
         type: DataTypes.BOOLEAN,
-        allowNull: false
+        allowNull: false,
+        defaultValue: false
     },
     event_name: {
         type: DataTypes.ENUM('Reverse Coding', 'Clash'),
         allowNull: false
+    },
+    team_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    created_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: DataTypes.NOW
     }
 }, {
     timestamps: false,
     indexes: [
-        {
-            unique: true,
-            fields: ['username', 'event_name']
-        },
-        {
-            unique: true,
-            fields: ['email', 'event_name']
-        }
+        { unique: true, fields: ['username'] },
+        { unique: true, fields: ['email'] }
     ]
 });
 

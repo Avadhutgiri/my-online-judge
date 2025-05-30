@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const User = require('./User');
+const Team = require('./Team');
 const Problem = require('./Problem');
 
 const Submission = sequelize.define('Submission', {
@@ -9,13 +9,9 @@ const Submission = sequelize.define('Submission', {
         autoIncrement: true,
         primaryKey: true
     },
-    user_id: {
+    team_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: User,
-            key: 'id'
-        }
     },
     problem_id: {
         type: DataTypes.INTEGER,
@@ -33,8 +29,13 @@ const Submission = sequelize.define('Submission', {
         type: DataTypes.ENUM('cpp', 'python', 'java'),
         allowNull: false
     },
+    failed_test_case: {
+        type: DataTypes.TEXT,
+        defaultValue: null,
+        allowNull: true
+    },
     result: {
-        type: DataTypes.ENUM('failed','Pending', 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded'),
+        type: DataTypes.TEXT,
         allowNull: false,
         defaultValue: 'Pending'
     },
@@ -55,9 +56,5 @@ const Submission = sequelize.define('Submission', {
 });
 
 // Define relationships
-User.hasMany(Submission, { foreignKey: 'user_id' });
-Problem.hasMany(Submission, { foreignKey: 'problem_id' });
-Submission.belongsTo(User, { foreignKey: 'user_id' });
-Submission.belongsTo(Problem, { foreignKey: 'problem_id' });
 
 module.exports = Submission;

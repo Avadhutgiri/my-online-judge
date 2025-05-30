@@ -1,17 +1,21 @@
 const { sequelize } = require('../config/database');
 const User = require('./User');
+const Team = require('./Team');
 const Problem = require('./Problem');
 const Submission = require('./Submission');
-const ProblemSample = require('./ProblemSample');  // Add ProblemSample model
+const ProblemSample = require('./ProblemSample');
 
-// Define relationships AFTER model imports
-User.hasMany(Submission, { foreignKey: 'user_id' });
-Problem.hasMany(Submission, { foreignKey: 'problem_id' });
-Submission.belongsTo(User, { foreignKey: 'user_id' });
-Submission.belongsTo(Problem, { foreignKey: 'problem_id' });
+// **Define Relationships AFTER loading models**
+User.belongsTo(Team, { foreignKey: 'team_id', as: 'Team' });
+Team.hasMany(User, { foreignKey: 'team_id', as: 'Users' });
 
-// Define relationship between Problem and ProblemSample
-Problem.hasMany(ProblemSample, { foreignKey: 'problem_id' });
+Submission.belongsTo(Team, { foreignKey: 'team_id', as: 'Team' });
+Team.hasMany(Submission, { foreignKey: 'team_id', as: 'Submissions' });
+
+Submission.belongsTo(Problem, { foreignKey: 'problem_id', as: 'Problem' });
+Problem.hasMany(Submission, { foreignKey: 'problem_id', as: 'Submissions' });
+
+Problem.hasMany(ProblemSample, { foreignKey: 'problem_id'});
 ProblemSample.belongsTo(Problem, { foreignKey: 'problem_id' });
 
 const syncDB = async () => {
@@ -26,6 +30,7 @@ const syncDB = async () => {
 module.exports = {
     sequelize,
     User,
+    Team,
     Problem,
     Submission,
     ProblemSample,
