@@ -18,7 +18,7 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
     command: >
-      certonly --webroot -w /var/www/certbot --force-renewal --email ${EMAIL} -d ${DOMAIN} --agree-tos 
+      certonly --webroot -w /var/www/certbot --keep-until-expiring --email ${EMAIL} -d ${DOMAIN} --agree-tos 
 
     networks: [judge_net]
 
@@ -98,8 +98,10 @@ services:
     working_dir: /app
     command: >
       celery -A workers.tasks worker
-             --loglevel=${LOG_LEVEL:-info}
-             --concurrency=${WORKER_CONCURRENCY:-4}
+            --loglevel=${LOG_LEVEL:-info}
+            --concurrency=${WORKER_CONCURRENCY:-4}
+            --queues=submitQueue,runQueue,runSystemQueue
+
     environment:
       BASE_DIR: ${BASE_DIR}
       REDIS_HOST: redis
@@ -118,25 +120,25 @@ services:
     networks: [judge_net]
 
   # ─────────────────── CELERY BEAT ───────────────────
-  celery_beat:
-    build: { context: ./workers, dockerfile: Dockerfile }
-    container_name: online-judge-celery-beat
-    restart: always
-    depends_on: { redis: { condition: service_healthy } }
-    volumes:
-      - ./workers:/app/workers:z
-    working_dir: /app
-    command: >
-      celery -A workers.tasks beat
-             --loglevel=${LOG_LEVEL:-info}
-    environment:
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      BACKEND_HOST: backend
-      BACKEND_PORT: 5000
-      CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
-    networks: [judge_net]
+  # celery_beat:
+  #   build: { context: ./workers, dockerfile: Dockerfile }
+  #   container_name: online-judge-celery-beat
+  #   restart: always
+  #   depends_on: { redis: { condition: service_healthy } }
+  #   volumes:
+  #     - ./workers:/app/workers:z
+  #   working_dir: /app
+  #   command: >
+  #     celery -A workers.tasks beat
+  #            --loglevel=${LOG_LEVEL:-info}
+  #   environment:
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     BACKEND_HOST: backend
+  #     BACKEND_PORT: 5000
+  #     CELERY_BROKER_URL: redis://redis:6379/0
+  #     CELERY_RESULT_BACKEND: redis://redis:6379/0
+  #   networks: [judge_net]
 
   # ───────────────────── NGINX ───────────────────────
   nginx:
@@ -170,4 +172,17 @@ services:
         done
       "
     networks: [judge_net]
+  
+  # ────────────────── CELERY API ──────────────────
+  celery_api:
+    build: { context: ./workers, dockerfile: Dockerfile }
+    container_name: celery-api
+    restart: always
+    ports:
+      - "8000:8000"
+    command: python api_server.py
+    depends_on:
+      - redis
+    networks: [judge_net]
+
 # ─────────────────────────────────────────────────────
