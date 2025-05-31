@@ -110,84 +110,85 @@ def send_webhook_result(url, result):
 @app.task(name="tasks.process")
 def process(queue):
     print(f"Processing queue: {queue}")
-    try:
-        item = fetch(queue)
-        if not item:
-            print(f"Queue {queue} is empty.")
-            return
+    for _ in range(8):
+        try:
+            item = fetch(queue)
+            if not item:
+                print(f"Queue {queue} is empty.")
+                return
 
-        _, data = item
-        task = json.loads(data)
-        print(f"Processing task: {task['submission_id']}")
+            _, data = item
+            task = json.loads(data)
+            print(f"Processing task: {task['submission_id']}")
 
-        if  'code' in task:
-            task['code'] = decode(task['code'])
+            if  'code' in task:
+                task['code'] = decode(task['code'])
 
-        if task.get('customTestcase'):
-            task['customTestcase'] = decode(task['customTestcase'])
+            if task.get('customTestcase'):
+                task['customTestcase'] = decode(task['customTestcase'])
 
-        print(f"Processing problem_id: {task['problem_id']}")
-        
-        if queue == RUN_QUEUE:
-            result = run(
-                task['submission_id'],
-                task['code'],
-                task['language'],
-                task['problem_id'],
-                inputData=task.get('customTestcase'),
-            )
+            print(f"Processing problem_id: {task['problem_id']}")
+            
+            if queue == RUN_QUEUE:
+                result = run(
+                    task['submission_id'],
+                    task['code'],
+                    task['language'],
+                    task['problem_id'],
+                    inputData=task.get('customTestcase'),
+                )
 
-            webhook_data = {
-                'submission_id': task['submission_id'],
-                'status': result.get('status', 'failed'),
-                'message': result.get('message') or None,
-                'user_output': result.get('user_output') or None,            
+                webhook_data = {
+                    'submission_id': task['submission_id'],
+                    'status': result.get('status', 'failed'),
+                    'message': result.get('message') or None,
+                    'user_output': result.get('user_output') or None,            
+                    }
+                print(f"webhook_data: {webhook_data}")
+                store_run_result(task['submission_id'], webhook_data)
+                send_webhook_result(WEBHOOK_URL_RUN, webhook_data)
+                
+            elif queue == RUN_SYSTEM_QUEUE:
+                result =runSystemcode(
+                    task['submission_id'],
+                    task['problem_id'],
+                    inputData=task.get('customTestcase'),
+                )
+
+                webhook_data = {
+                    'submission_id': task['submission_id'],
+                    'status': result.get('status', 'failed'),
+                    'message': result.get('message') or None,
+                    'expected_output': result.get('expected_output')
                 }
-            print(f"webhook_data: {webhook_data}")
-            store_run_result(task['submission_id'], webhook_data)
-            send_webhook_result(WEBHOOK_URL_RUN, webhook_data)
-            
-        elif queue == RUN_SYSTEM_QUEUE:
-            result =runSystemcode(
-                task['submission_id'],
-                task['problem_id'],
-                inputData=task.get('customTestcase'),
-            )
 
-            webhook_data = {
-                'submission_id': task['submission_id'],
-                'status': result.get('status', 'failed'),
-                'message': result.get('message') or None,
-                'expected_output': result.get('expected_output')
-            }
+                store_run_result(task['submission_id'], webhook_data)
+                send_webhook_result(WEBHOOK_URL_SYSTEM, webhook_data)
+                
+            else:
+                result = submit(
+                    submission_id=task['submission_id'],
+                    code=task['code'],
+                    language=task['language'],
+                    problem_id=task['problem_id'],
+                    input_path=task['inputPath']
+                )
 
-            store_run_result(task['submission_id'], webhook_data)
-            send_webhook_result(WEBHOOK_URL_SYSTEM, webhook_data)
-            
-        else:
-            result = submit(
-                submission_id=task['submission_id'],
-                code=task['code'],
-                language=task['language'],
-                problem_id=task['problem_id'],
-                input_path=task['inputPath']
-            )
+                webhook_data = {
+                    'submission_id': task['submission_id'],
+                    'status': result.get('status'),
+                    'message': result.get('message') or None,
+                    'failed_test_case': result.get('test_case') or None
+                }
 
-            webhook_data = {
-                'submission_id': task['submission_id'],
-                'status': result.get('status'),
-                'message': result.get('message') or None,
-                'failed_test_case': result.get('test_case') or None
-            }
+                send_webhook_result(WEBHOOK_URL_SUBMIT, webhook_data)
 
-            send_webhook_result(WEBHOOK_URL_SUBMIT, webhook_data)
+            print(f"Completed processing task: {task['submission_id']}")
+            print(f"Result: {webhook_data}")
 
-        print(f"Completed processing task: {task['submission_id']}")
-        print(f"Result: {webhook_data}")
-
-    except Exception as e:
-        print(f"Error processing task: {e}")
-        raise
+        except Exception as e:
+            print(f"Error processing task: {e}")
+            raise
 
 # Health check task
 @app.task(name="tasks.health")
