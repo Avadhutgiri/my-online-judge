@@ -141,7 +141,7 @@ exports.getAllProblems = async (req, res) => {
 // Get all submissions without filters
 exports.getAllSubmissions = async (req, res) => {
     try {
-        console.log("getAllSubmissions");
+        // console.log("getAllSubmissions");
         const submissions = await Submission.findAll({
             include: [
                 {
@@ -157,7 +157,7 @@ exports.getAllSubmissions = async (req, res) => {
             ],
             attributes: ['id', 'team_id', 'problem_id', 'result',  'submitted_at', 'code','language']
         });
-        console.log(submissions);
+        // console.log(submissions);
         res.json(submissions);
     } catch (error) {
         res.status(500).json({ error: "Error fetching submissions", details: error.message });

@@ -2,3 +2,5 @@ redis
 celery
 requests
 docker
+flask
+gunicorn

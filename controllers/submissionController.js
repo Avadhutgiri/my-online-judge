@@ -2,20 +2,28 @@ const redisClient = require('../config/redisConfig');
 
 const { Submission, Problem } = require('../models');
 
+const axios = require('axios');
+const CELERY_API_BASE = 'http://celery-api:8000';
+
 async function enqueueTask(queue, data) {
     try {
         if (data.code)
             data.code = Buffer.from(data.code).toString('base64');
-        if (data.customTestcase) {
+        if (data.customTestcase)
             data.customTestcase = Buffer.from(data.customTestcase).toString('base64');
-        }
 
-        await redisClient.lPush(queue, JSON.stringify(data));
-        console.log(`Task enqueued to ${queue} with submission_id: ${data.submission_id}`);
+        let endpoint = '';
+        if (queue === 'submitQueue') endpoint = '/enqueue/submit';
+        else if (queue === 'runQueue') endpoint = '/enqueue/run';
+        else if (queue === 'runSystemQueue') endpoint = '/enqueue/system';
+
+        const res = await axios.post(`${CELERY_API_BASE}${endpoint}`, data);
+        // console.log(`Enqueued via Flask: ${res.data.message}`);
     } catch (error) {
-        console.error(`Error enqueuing task to ${queue}:`, error);
+        console.error(`Error enqueueing via Flask API:`, error.message);
     }
 }
+
 
 exports.SubmitProblem = async (req, res) => {
     try {
