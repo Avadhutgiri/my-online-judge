@@ -7,7 +7,6 @@ A comprehensive, production-ready online competitive programming platform built 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Platform-blue?style=for-the-badge&logo=google-chrome)](https://www.cpcoders.duckdns.org)
 [![Frontend Repo](https://img.shields.io/badge/Frontend-Repository-green?style=for-the-badge&logo=github)](https://github.com/Avadhutgiri/online-judge-frontend)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/Avadhutgiri/my-online-judge/deploy.yml?style=for-the-badge&logo=github-actions)](https://github.com/Avadhutgiri/my-online-judge/actions)
-[![License](https://img.shields.io/github/license/Avadhutgiri/my-online-judge?style=for-the-badge)](LICENSE)
 
 </div>
 
@@ -380,67 +379,7 @@ GET    /metrics                    # Performance metrics
 
 ---
 
-## 🤝 **Contributing**
 
-We welcome contributions from the community! Here's how to get involved:
-
-### **Development Workflow**
-
-1. **Fork & Clone**
-```bash
-git clone https://github.com/your-username/my-online-judge.git
-cd my-online-judge
-git checkout -b feature/your-amazing-feature
-```
-
-2. **Development Setup**
-```bash
-# Install dependencies
-npm install
-pip install -r flask-service/requirements.txt
-
-# Start development environment
-docker-compose up --build
-```
-
-3. **Code & Test**
-```bash
-# Run tests
-npm test
-python -m pytest flask-service/tests/
-
-# Lint code
-npm run lint
-```
-
-4. **Submit Changes**
-```bash
-git add .
-git commit -m "feat: add amazing new feature"
-git push origin feature/your-amazing-feature
-# Create Pull Request on GitHub
-```
-
-### **Contribution Guidelines**
-
-- **Code Style**: Follow ESLint (JavaScript) and PEP 8 (Python)
-- **Testing**: Maintain 80%+ test coverage
-- **Documentation**: Update README and inline comments
-- **Commits**: Use [Conventional Commits](https://conventionalcommits.org/)
-- **Pull Requests**: Provide detailed description and testing steps
-
-### **Areas for Contribution**
-
-| Area | Description | Difficulty |
-|------|-------------|------------|
-| 🐛 **Bug Fixes** | Fix reported issues and improve stability | Beginner |
-| ✨ **New Features** | Add contest modes, language support | Intermediate |
-| 📚 **Documentation** | Improve guides and API documentation | Beginner |
-| 🔒 **Security** | Enhance authentication and code isolation | Advanced |
-| ⚡ **Performance** | Optimize code execution and scaling | Advanced |
-| 🎨 **UI/UX** | Frontend improvements and user experience | Intermediate |
-
----
 
 ## 📊 **Performance & Scalability**
 
@@ -517,30 +456,7 @@ docker-compose logs -f worker
 
 ---
 
-## 🆘 **Support & Community**
 
-### **Getting Help**
-
-| Channel | Purpose | Response Time |
-|---------|---------|---------------|
-| 🐛 [GitHub Issues](https://github.com/Avadhutgiri/my-online-judge/issues) | Bug reports, feature requests | 24-48 hours |
-| 💬 [Discussions](https://github.com/Avadhutgiri/my-online-judge/discussions) | Questions, ideas, showcase | 1-3 days |
-| 📧 Email | Security issues, partnerships | 3-5 days |
-
-### **Reporting Issues**
-
-When reporting bugs, please include:
-- **Environment details** (OS, Docker version, etc.)
-- **Steps to reproduce** the issue
-- **Expected vs actual behavior**
-- **Logs and error messages**
-- **Screenshots** (if applicable)
-
----
-
-## 📄 **License & Legal**
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ### **Third-Party Licenses**
 - Node.js, Express.js - MIT License
@@ -589,12 +505,12 @@ Special thanks to the amazing open-source communities behind:
 
 <div align="center">
 
-### **Built with ❤️ **
+### Built with ❤️  
 
-**[⭐ Star this repository](https://github.com/Avadhutgiri/my-online-judge) • [🍴 Fork for your use](https://github.com/Avadhutgiri/my-online-judge/fork) • [📝 Report Issues](https://github.com/Avadhutgiri/my-online-judge/issues)**
+**[⭐ Star this repository](https://github.com/Avadhutgiri/my-online-judge) • [ Fork for your use](https://github.com/Avadhutgiri/my-online-judge/fork) • [📝 Report Issues](https://github.com/Avadhutgiri/my-online-judge/issues)**
 
 ---
 
-*Made with passion by **[Avadhut Giri](https://github.com/Avadhutgiri)** and the open-source community*
+*Made with passion by **[Avadhut Giri](https://github.com/Avadhutgiri)** *
 
 </div>
