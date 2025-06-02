@@ -24,7 +24,7 @@ services:
 
   # ───────────────────── BACKEND ─────────────────────
   backend:
-    build: .
+    image: ${DOCKERHUB}/oj-backend:latest
     container_name: backend
     restart: always
     # ports: ["5000:5000"]
@@ -80,7 +80,7 @@ services:
 
   # ─────────────────── CELERY WORKER ─────────────────
   worker:
-    build: { context: ./workers, dockerfile: Dockerfile }
+    image: ${DOCKERHUB}/oj-worker:latest
     healthcheck:
       test : ["CMD", "celery -A workers.tasks status || exit 1"]
       interval: 30s
@@ -152,28 +152,9 @@ services:
       - ./certbot/www:/var/www/certbot
     networks: [judge_net]
 
-  # ────────────────── CERTBOT RENEW ──────────────────
-  certbot-renew:
-    image: certbot/certbot
-    container_name: certbot-renew
-    restart: unless-stopped
-    volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-    entrypoint: >
-      sh -c "
-        trap exit TERM;
-        while :; do
-          certbot renew --webroot -w /var/lib/letsencrypt --quiet;
-          echo '🔄 Renewed at' $(date);
-          sleep 12h & wait $${!};
-        done
-      "
-    networks: [judge_net]
-  
   # ────────────────── CELERY API ──────────────────
   celery_api:
-    build: { context: ./workers, dockerfile: Dockerfile }
+    image: ${DOCKERHUB}/oj-worker:latest
     container_name: celery-api
     restart: always
     # ports:
