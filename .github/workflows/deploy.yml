@@ -42,5 +42,9 @@ jobs:
             cd ~/online-judge-backend
             docker pull ${{ secrets.DOCKER_USERNAME }}/oj-backend:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/oj-worker:latest
+            docker pull gcc:latest
+            docker pull openjdk:17-jdk-alpine
+            docker pull python:3.9-alpine
             docker compose down
-            docker compose up -d
+            docker compose up -d --scale worker=2
+
