@@ -35,8 +35,8 @@ jobs:
       - name: Deploy To GCP via SSH
         uses : appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.GCP_HOST }}
-          username: ${{ secrets.GCP_USERNAME }}
+          host: ${{ secrets.GCP_SSH_HOST }}
+          username: ${{ secrets.GCP_SSH_USERNAME }}
           key: ${{ secrets.GCP_SSH_KEY }}
           script: |
             cd ~/online-judge-backend
