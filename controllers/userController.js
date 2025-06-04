@@ -287,3 +287,12 @@ exports.Logout = async (req, res) => {
         res.status(500).json({ error: "Error logging out", details: error.message });
     }
 }
+
+exports.getAllEvents = async (req, res) => {
+    try {
+        const events = await Event.findAll();
+        res.status(200).json({ events });
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching events', details: error.message });
+    }
+};
