@@ -85,7 +85,7 @@ exports.getAllUsers = async (req, res) => {
                 "created_at",
             ],
         });
-        res.json(users);
+        res.status(200).json(users);
     } catch (error) {
         res
             .status(500)
@@ -116,7 +116,7 @@ exports.getAllTeams = async (req, res) => {
                 }
             ]
         });
-        res.json({ teams });
+        res.status(200).json({ teams });
     } catch (error) {
         res.status(500).json({ error: "Error fetching teams", details: error.message });
     }
@@ -133,7 +133,7 @@ exports.getAllProblems = async (req, res) => {
                 "test_case_path",
             ],
         });
-        res.json(problems);
+        res.status(200).json({ problems });
     } catch (error) {
         res.status(500).json({ error: "Error fetching problems", details: error.message });
     }
@@ -141,7 +141,6 @@ exports.getAllProblems = async (req, res) => {
 // Get all submissions without filters
 exports.getAllSubmissions = async (req, res) => {
     try {
-        // console.log("getAllSubmissions");
         const submissions = await Submission.findAll({
             include: [
                 {
@@ -157,8 +156,7 @@ exports.getAllSubmissions = async (req, res) => {
             ],
             attributes: ['id', 'team_id', 'problem_id', 'result',  'submitted_at', 'code','language']
         });
-        // console.log(submissions);
-        res.json(submissions);
+        res.status(200).json({ submissions });
     } catch (error) {
         res.status(500).json({ error: "Error fetching submissions", details: error.message });
     }
@@ -184,7 +182,7 @@ exports.getSubmissionsByEvent = async (req, res) => {
             attributes: ['id', 'team_id', 'problem_id', 'result', 'execution_time', 'memory_usage', 'created_at']
         });
 
-        res.json(submissions);
+        res.status(200).json({ submissions });
     } catch (error) {
         res.status(500).json({ error: 'Error fetching submissions', details: error.message });
     }
@@ -210,7 +208,7 @@ exports.getSubmissionsByTeam = async (req, res) => {
             attributes: ['id', 'problem_id', 'result', 'execution_time', 'memory_usage', 'created_at']
         });
 
-        res.json(submissions);
+        res.status(200).json({ submissions });
     } catch (error) {
         res.status(500).json({ error: 'Error fetching submissions', details: error.message });
     }
@@ -283,7 +281,7 @@ exports.putProblem = async (req, res) => {
 
         await problem.save();
 
-        res.json({ message: "Problem updated successfully", problem });
+        res.status(200).json({ message: "Problem updated successfully", problem });
     } catch (error) {
         res
             .status(500)
@@ -320,7 +318,7 @@ exports.addSolution = async (req, res) => {
         problem.solution = `problems/${problem_id}/`;
         await problem.save();
 
-        res.json({ message: 'Solution uploaded successfully!' });
+        res.status(200).json({ message: 'Solution uploaded successfully!' });
 
     }
     catch (error) {
@@ -346,7 +344,7 @@ exports.uploadTestcases = async (req, res) => {
         problem.test_case_path = `problems/${problem_id}/`;
         await problem.save();
 
-        res.json({ message: 'Test cases uploaded successfully!' });
+        res.status(200).json({ message: 'Test cases uploaded successfully!' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error uploading test cases', details: error.message });
@@ -376,7 +374,7 @@ exports.getTeams = async (req, res) => {
             attributes: ["id", "team_name", "event_name", "is_junior"],
         });
 
-        res.json({ status: "success", data: teams });
+        res.status(200).json({ status: "success", data: teams });
     } catch (error) {
         console.error("Error fetching teams with users:", error);
         res.status(500).json({ status: "error", message: "Internal Server Error" });
@@ -399,12 +397,11 @@ exports.getSubmission = async (req, res) => {
                 }
             ]
         });
-
         if (!submission) {
             return res.status(404).json({ error: "Submission not found" });
         }
 
-        res.json(submission);
+        res.status(200).json(submission);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching submission', details: error.message });
     }

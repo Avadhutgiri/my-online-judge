@@ -80,7 +80,7 @@ exports.getLeaderboard = async (req, res) => {
         }));
 
         // 🔹 Send **both** problem details & ranked users
-        res.json({
+        res.status(200).json({
             event_name,
             problems,
             problem_columns: problemColumns,

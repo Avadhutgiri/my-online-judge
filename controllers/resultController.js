@@ -44,7 +44,7 @@ exports.getResult = async (req, res) => {
         const accuracy = totalSubmissions > 0 ? ((team.correct_submission / totalSubmissions) * 100).toFixed(2) : '0.00';
 
         // Response
-        res.json({
+        res.status(200).json({
             team: {
                 id: team_id,
                 team_name: team.team_name,

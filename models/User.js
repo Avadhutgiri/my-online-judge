@@ -30,9 +30,13 @@ const User = sequelize.define('User', {
         allowNull: false,
         defaultValue: false
     },
-    event_name: {
-        type: DataTypes.ENUM('Reverse Coding', 'Clash'),
-        allowNull: false
+    event_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Events',
+          key: 'id'
+        },
     },
     team_id: {
         type: DataTypes.INTEGER,

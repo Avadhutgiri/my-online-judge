@@ -21,6 +21,14 @@ const Submission = sequelize.define('Submission', {
             key: 'id'
         }
     },
+    event_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: Event,
+            key: 'id'
+        }
+    },
     code: {
         type: DataTypes.TEXT,
         allowNull: false

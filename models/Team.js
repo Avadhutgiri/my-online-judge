@@ -20,9 +20,13 @@ const Team = sequelize.define('Team',{
         type: DataTypes.INTEGER,
         allowNull: true  // Can be null for solo participants
     },
-    event_name: {
-        type: DataTypes.ENUM("Reverse Coding", "Clash"),
+    event_id: {
+        type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          model: 'Events',
+          key: 'id'
+        },
     },
     is_junior: {
         type: DataTypes.BOOLEAN,

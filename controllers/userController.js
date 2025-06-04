@@ -6,15 +6,20 @@ require("dotenv").config();
 exports.registerUser = async (req, res) => {
     try {
         console.log(req.body); // Debug incoming request body
-        const { username, email, password, is_junior, event_name } = req.body;
+        const { username, email, password, is_junior, event_id } = req.body;
 
         // Input validation
-        if (!username || !email || !password || is_junior === undefined || !event_name) {
+        if (!username || !email || !password || is_junior === undefined || !event_id) {
             return res.status(400).json({ error: 'All fields are required' });
         }
 
         if (typeof password !== 'string' || password.length < 6) {
             return res.status(400).json({ error: 'Password must be a string and at least 6 characters long' });
+        }
+
+        const event = await Event.findByPk(event_id);
+        if (!event) {
+            return res.status(400).json({ error: 'Event not found' });
         }
 
         // Email format validation
@@ -28,7 +33,7 @@ exports.registerUser = async (req, res) => {
             return res.status(400).json({ error: 'Username must be between 3 and 20 characters' });
         }
 
-        const checkUser = await User.findOne({ where: { username, is_junior, event_name } });
+        const checkUser = await User.findOne({ where: { username, is_junior, event_id } });
         if (checkUser) {
             return res.status(400).json({ error: 'Username already exists for this event and category' });
         }
@@ -46,7 +51,7 @@ exports.registerUser = async (req, res) => {
             email,
             password: hashedPassword,
             is_junior,
-            event_name
+            event_id
         });
 
         //  Now, create their solo team using their user ID
@@ -54,7 +59,7 @@ exports.registerUser = async (req, res) => {
             team_name: `${username}_solo`,
             user1_id: newUser.id,  // Assign the user ID after creation
             user2_id: null,        // No second user
-            event_name,
+            event_id,
             is_junior,
             score: 0
         });
@@ -68,7 +73,7 @@ exports.registerUser = async (req, res) => {
             user: {
                 username: newUser.username,
                 email: newUser.email,
-                event_name: newUser.event_name,
+                event_id: newUser.event_id,
                 is_junior: newUser.is_junior
             }
         });
@@ -88,11 +93,16 @@ exports.registerUser = async (req, res) => {
 
 exports.RegisterTeam = async (req, res) => {
     try {
-        const { username1, team_name, username2, event_name} = req.body;
+        const { username1, team_name, username2, event_id} = req.body;
 
         //  Find both users
-        const user1 = await User.findOne({ where: { username: username1, event_name } });
-        const user2 = await User.findOne({ where: { username: username2, event_name } });
+        const user1 = await User.findOne({ where: { username: username1, event_id } });
+        const user2 = await User.findOne({ where: { username: username2, event_id } });
+
+        const event = await Event.findByPk(event_id);
+        if (!event) {
+            return res.status(400).json({ error: 'Event not found' });
+        }
 
         if (!user1 || !user2) {
             return res.status(404).json({ error: "Both users must be registered before creating a team." });
@@ -107,11 +117,11 @@ exports.RegisterTeam = async (req, res) => {
         }
 
         //  Ensure users belong to the same event & category
-        if (user1.event_name !== user2.event_name || user1.is_junior !== user2.is_junior) {
+        if (user1.event_id !== user2.event_id || user1.is_junior !== user2.is_junior) {
             return res.status(400).json({ error: "Both users must be in the same event and category." });
         }
 
-        const teamExists = await Team.findOne({ where: { team_name, event_name } });
+        const teamExists = await Team.findOne({ where: { team_name, event_id } });
         if (teamExists) {
             return res.status(400).json({ error: "Team name already exists. Please choose another." });
         }
@@ -120,7 +130,7 @@ exports.RegisterTeam = async (req, res) => {
             team_name,
             user1_id: user1.id,
             user2_id: user2.id,
-            event_name,
+            event_id,
             is_junior: user1.is_junior,
             score: 0
         });
@@ -143,11 +153,24 @@ exports.RegisterTeam = async (req, res) => {
 
 exports.Login = async (req, res) => {
     try {
-        const { username, password, team_login, team_name, event_name } = req.body;
+        const { username, password, team_login, team_name, event_id } = req.body;
 
         // Input validation
-        if (!username || !password || !event_name) {
-            return res.status(400).json({ error: 'Username, password, and event_name are required' });
+        if (!username || !password || !event_id) {
+            return res.status(400).json({ error: 'Username, password, and event_id are required' });
+        }
+
+        const event = await Event.findByPk(event_id);
+        if (!event) {
+            return res.status(400).json({ error: 'Event not found' });
+        }
+
+        const now = new Date();
+        if (!event.start_time || now < event.start_time) {
+            return res.status(403).json({ error: "Event has not started yet" });
+        }
+        if (now > event.end_time) {
+            return res.status(403).json({ error: "Event has ended" });
         }
 
         if (team_login === undefined) {
@@ -160,18 +183,18 @@ exports.Login = async (req, res) => {
             if (!team_name) {
                 return res.status(400).json({ error: "Team login requires 'team_name' to be provided" });
             }
-            const team = await Team.findOne({ where: { team_name, event_name } });
+            const team = await Team.findOne({ where: { team_name, event_id } });
             if (!team) {
                 return res.status(404).json({ error: "Team not found. Please register first" });
             }
 
-            user = await User.findOne({ where: { username, team_id: team.id, event_name } });
+            user = await User.findOne({ where: { username, team_id: team.id, event_id } });
 
             if (!user) {
                 return res.status(404).json({ error: "User not found in this team" });
             }
         } else {
-            user = await User.findOne({ where: { username, event_name } });
+            user = await User.findOne({ where: { username, event_id } });
 
             if (!user) {
                 return res.status(404).json({ error: "User not found. Please register first" });
@@ -194,7 +217,7 @@ exports.Login = async (req, res) => {
             {
                 id: user.id,
                 username: user.username,
-                event_name: user.event_name,
+                event_id: user.event_id,
                 is_junior: user.is_junior,
                 team_id: user.team_id
             },
@@ -230,7 +253,7 @@ exports.Login = async (req, res) => {
             message: "User logged in successfully",
             user: {
                 username: user.username,
-                event_name: user.event_name,
+                event_id: user.event_id,
                 is_junior: user.is_junior,
                 team_name: team_login ? team_name : null
             }
@@ -247,7 +270,7 @@ exports.Login = async (req, res) => {
 exports.GetProfile = async (req, res) => {
     try {
         const user = await User.findByPk(req.user.id, { attributes: { exclude: ['password'] } });
-        res.json(user);
+        res.status(200).json(user);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching user profile' });
     }

@@ -30,20 +30,12 @@ exports.SubmitProblem = async (req, res) => {
         const { problem_id, code, language } = req.body;
         const team_id = req.user.team_id;
 
-        const problem = await Problem.findByPk(problem_id);
-        if (!problem) {
-            return res.status(404).json({ error: 'Problem not found' });
-        }
-
-        if (req.user.event_name !== problem.event_name) {
-            return res.status(403).json({
-                error: 'You are not authorized to submit a solution for this problem.',
-                details: `Expected event: ${req.user.event_name}, Problem event: ${problem.event_name}`
-            });
-        }
+        const problem = req.problem;
+        const event = req.event;
         const submission = await Submission.create({
             team_id,
             problem_id,
+            event_id: event.id,
             code,
             language,
             result: 'Pending',
@@ -64,7 +56,7 @@ exports.SubmitProblem = async (req, res) => {
 
         await enqueueTask('submitQueue', SubmissionData);
 
-        res.json({ message: 'Code submitted successfully, waiting for evaluation.', submission_id: submission.id, result: submission.result });
+        res.status(200).json({ message: 'Code submitted successfully, waiting for evaluation.', submission_id: submission.id, result: submission.result });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error submitting code', details: error.message });
@@ -73,20 +65,9 @@ exports.SubmitProblem = async (req, res) => {
 exports.RunProblem = async (req, res) => {
     try {
 
-        const { problem_id, code, customTestcase, language, event } = req.body;
+        const { problem_id, code, customTestcase, language } = req.body;
         const user = req.user;
-        const problem = await Problem.findByPk(problem_id);
-        if (!problem) {
-            return res.status(404).json({ error: 'Problem not found' });
-        }
-
-
-        if (req.user.event_name !== problem.event_name) {
-            return res.status(403).json({
-                error: 'You are not authorized to submit a solution for this problem.',
-                details: `Expected event: ${req.user.event_name}, Problem event: ${problem.event_name}`
-            });
-        }
+        
         const submission_id= `run_${Date.now()}`;
 
         const runData = {
@@ -96,7 +77,6 @@ exports.RunProblem = async (req, res) => {
             code,
             customTestcase: customTestcase || null,
             language,
-            event,
         };
 
 
@@ -113,10 +93,8 @@ exports.RunOnSystem = async (req, res) => {
     try{
         const { problem_id, customTestcase } = req.body;
 
-        const problem = await Problem.findByPk(problem_id);
-        if (!problem) {
-            return res.status(404).json({ error: 'Problem not found' });
-        }
+        const problem = req.problem;
+        const event = req.event;
 
         const submission_id= `run_${Date.now()}`;
 
@@ -144,7 +122,7 @@ exports.GetHistory = async (req, res) => {
             include: [{ model: Problem, attributes: ['title'], as: 'Problem' }],
             order: [['submitted_at', 'DESC']]
         });
-        res.json(submissions);
+        res.status(200).json(submissions);
     }
     catch (error) {
         res.status(500).json({ error: 'Error fetching submission history', details: error.message });
@@ -159,7 +137,7 @@ exports.GetHistoryByProblem = async (req, res) => {
             include: [{ model: Problem, attributes: ['title'], as: 'Problem' }],
             order: [['submitted_at', 'DESC']]
         });
-        res.json(submissions);
+        res.status(200).json(submissions);
     }
     catch (error) {
         res.status(500).json({ error: 'Error fetching submission history', details: error.message });

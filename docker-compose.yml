@@ -4,7 +4,7 @@ networks:
   judge_net:
 
 volumes:
-  pgdata:
+  # pgdata:
   certbot-etc:
   certbot-var:
 
@@ -28,7 +28,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV}
       JWT_SECRET: ${JWT_SECRET}
-      DB_HOST: db
+      DB_HOST: ${DB_HOST}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       DB_NAME: ${DB_NAME}
@@ -36,7 +36,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
-      db:              { condition: service_healthy }
+      # db:              { condition: service_healthy }
       redis:           { condition: service_healthy }
       worker:          { condition: service_started   }
     volumes:
@@ -47,21 +47,21 @@ services:
     networks: [judge_net]
 
   # ───────────────────── DATABASE ────────────────────
-  db:
-    image: postgres:14-alpine
-    container_name: db
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: ${DB_NAME}
-    volumes: [pgdata:/var/lib/postgresql/data]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks: [judge_net]
+  # db:
+  #   image: postgres:14-alpine
+  #   container_name: db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: ${DB_USER}
+  #     POSTGRES_PASSWORD: ${DB_PASS}
+  #     POSTGRES_DB: ${DB_NAME}
+  #   volumes: [pgdata:/var/lib/postgresql/data]
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks: [judge_net]
 
   # ───────────────────── REDIS ───────────────────────
   redis:

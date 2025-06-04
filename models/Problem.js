@@ -40,9 +40,13 @@ const Problem = sequelize.define('Problem', {
         type: DataTypes.BOOLEAN,
         allowNull: false
     },
-    event_name: {
-        type: DataTypes.ENUM('Reverse Coding', 'Clash'),
-        allowNull: false
+    event_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Events',
+          key: 'id'
+        },
     },
     time_limit: {
         type: DataTypes.INTEGER,

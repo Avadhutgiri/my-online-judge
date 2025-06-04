@@ -60,5 +60,7 @@ router.get("/submissions/team", adminAuthenticate, adminController.getSubmission
 
 // router.get("/stats", adminAuthenticate, adminController.getStats);
 
+router.get("/event/create", adminAuthenticate, adminController.createEvent);
+router.post("/event/start", adminAuthenticate, adminController.startEvent);
 
 module.exports = router;

@@ -46,11 +46,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/protected', authenticateToken, (req, res) => {
-    res.json({ message: 'Access granted', user: req.user });
+    res.status(200).json({ message: 'Access granted', user: req.user });
 });
 
 app.get('/api/users/verify', authenticateToken, (req, res) => {
-    res.json({ authenticated: true, user: req.user });
+    res.status(200).json({ authenticated: true, user: req.user });
   });
 
 

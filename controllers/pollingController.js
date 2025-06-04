@@ -13,7 +13,7 @@ exports.getSubmission = async (req, res) => {
                 return res.status(404).json({ error: 'Run request not found or expired' });
             }
 
-            return res.json(JSON.parse(runResult));
+            return res.status(200).json(JSON.parse(runResult));
         }
 
         // Handle normal submission polling (for stored results in the database)
@@ -25,7 +25,7 @@ exports.getSubmission = async (req, res) => {
             return res.status(404).json({ error: 'Submission not found' });
         }
 
-        res.json({
+        res.status(200).json({
             submission_id: submission.id,
             status: submission.result,
             failed_test_case: submission.failed_test_case,

@@ -34,7 +34,7 @@ exports.getProblems = async (req, res) => {
             }))
         }));
 
-        res.json(response);
+        res.status(200).json(response);
     } catch (error) {
         console.error("Error fetching problems:", error);
         res.status(500).json({ error: 'Error fetching problems', details: error.message });
@@ -76,7 +76,7 @@ exports.getProblem = async (req, res) => {
             solution: problem.solution
         };
 
-        res.json(response);
+        res.status(200).json(response);
     } catch (error) {
         console.error("Error fetching problem:", error);
         res.status(500).json({ error: 'Error fetching problem', details: error.message });
@@ -101,7 +101,7 @@ exports.getTestCase = async (req, res) => {
         const inputs = files.filter((file) => file.startsWith("input"));
         const outputs = files.filter((file) => file.startsWith("output"));
 
-        res.json({ inputs, outputs });
+        res.status(200).json({ inputs, outputs });
     } catch (error) {
         res
             .status(500)
@@ -132,7 +132,7 @@ exports.getProblemStats = async (req, res) => {
 
         // If no submissions found, return empty stats
         if (!problemStats) {
-            return res.json({
+            return res.status(200).json({
                 status: "success",
                 data: {
                     problem_id,
@@ -158,7 +158,7 @@ exports.getProblemStats = async (req, res) => {
             success_rate: successRate
         };
 
-        res.json({ status: "success", data: formattedStats });
+        res.status(200).json({ status: "success", data: formattedStats });
 
     } catch (error) {
         console.error("Error fetching problem stats:", error);
