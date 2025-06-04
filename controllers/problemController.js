@@ -4,11 +4,11 @@ const { Problem, ProblemSample, Submission } = require("../models");
 const exp = require("constants");
 exports.getProblems = async (req, res) => {
     try {
-        const { event_name, is_junior } = req.user;
+        const { event_id, is_junior } = req.user;
 
         // Fetch problems and include their samples
         const problems = await Problem.findAll({
-            where: { event_name, is_junior },
+            where: { event_id, is_junior },
             include: [{ model: ProblemSample, attributes: ['input', 'output', 'explanation']}]
         });
 
@@ -25,7 +25,7 @@ exports.getProblems = async (req, res) => {
             output_format: problem.output_format,
             constraints: problem.constraints,
             score: problem.score,
-            event_name: problem.event_name,
+            event_id: problem.event_id,
             is_junior: problem.is_junior,
             samples: problem.ProblemSamples.map(sample => ({
                 input: sample.input,
@@ -45,8 +45,6 @@ exports.getProblem = async (req, res) => {
     try {
         const { id } = req.params;
         const problem_id = id;
-        console.log("this is params",req.params);
-        console.log("this is pid",id);
         const problem = await Problem.findByPk(problem_id, {
             include: [{ model: ProblemSample, attributes: ['input', 'output', 'explanation']}]
         });
@@ -63,7 +61,7 @@ exports.getProblem = async (req, res) => {
             output_format: problem.output_format,
             constraints: problem.constraints,
             score: problem.score,
-            event_name: problem.event_name,
+            event_id: problem.event_id,
             is_junior: problem.is_junior,
             samples: problem.ProblemSamples.map(sample => ({
                 input: sample.input,

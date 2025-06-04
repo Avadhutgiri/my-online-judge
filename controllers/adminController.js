@@ -17,9 +17,8 @@ exports.registerAdmin = async (req, res) => {
             username,
             email,
             is_junior: false,
-            event_name: "Clash",
             password: hashedPassword,
-            role: "admin", // Ensure the role is set to admin
+            role: "admin", // Ensure the role is set to admin,
         });
 
         res.status(201).json({
@@ -53,7 +52,6 @@ exports.loginAdmin = async (req, res) => {
                 id: user.id,
                 username: user.username,
                 is_junior: user.is_junior,
-                event_name: user.event_name,
                 role: user.role,
             },
             process.env.JWT_SECRET,
@@ -82,7 +80,6 @@ exports.getAllUsers = async (req, res) => {
                 "username",
                 "email",
                 "is_junior",
-                "event_name",
                 "role",
                 "created_at",
             ],
@@ -97,13 +94,14 @@ exports.getAllUsers = async (req, res) => {
 
 exports.getAllTeams = async (req, res) => {
     try {
+
         const teams = await Team.findAll({
             attributes: [
                 "id",
                 "team_name",
                 "user1_id",
                 "user2_id",
-                "event_name",
+                "event_id",
                 "is_junior",
                 "score",
                 "correct_submission",
@@ -130,7 +128,7 @@ exports.getAllProblems = async (req, res) => {
                 "id",
                 "title",
                 "is_junior",
-                "event_name",
+                "event_id",
                 "created_at",
                 "test_case_path",
             ],
@@ -164,10 +162,10 @@ exports.getAllSubmissions = async (req, res) => {
     }
 }
 
-// Get submissions filtered by event_name and is_junior
+// Get submissions filtered by event_id and is_junior
 exports.getSubmissionsByEvent = async (req, res) => {
     try {
-        const { event_name, is_junior } = req.query;
+        const { event_id, is_junior } = req.query;
 
         const submissions = await Submission.findAll({
             include: [
@@ -180,7 +178,7 @@ exports.getSubmissionsByEvent = async (req, res) => {
                     attributes: ['team_name']
                 }
             ],
-            where: { event_name, is_junior },
+            where: { event_id, is_junior },
             attributes: ['id', 'team_id', 'problem_id', 'result', 'execution_time', 'memory_usage', 'created_at']
         });
 
@@ -220,12 +218,12 @@ exports.addProblem = async (req, res) => {
     try {
         const {
             title, description, score, input_format, output_format,
-            constraints, test_case_path, is_junior, event_name,
+            constraints, test_case_path, is_junior, event_id,
             time_limit, memory_limit, samples
         } = req.body;
 
         // Validate required fields
-        if (!title || !input_format || !output_format || !event_name) {
+        if (!title || !input_format || !output_format || !event_id) {
             return res.status(400).json({ error: "Missing required fields." });
         }
 
@@ -237,7 +235,7 @@ exports.addProblem = async (req, res) => {
         // Create the problem in the database
         const newProblem = await Problem.create({
             title, description, score, input_format, output_format,
-            constraints, test_case_path, is_junior, event_name,
+            constraints, test_case_path, is_junior, event_id,
             time_limit, memory_limit
         });
 
@@ -356,11 +354,11 @@ exports.uploadTestcases = async (req, res) => {
 // Get all teams and allfrom that team 
 exports.getTeams = async (req, res) => {
     try {
-        const { event_name, is_junior } = req.query; // Extract filters from query parameters
+        const { event_id, is_junior } = req.query; // Extract filters from query parameters
 
         // Define the filter conditions
         const filters = {};
-        if (event_name) filters.event_name = event_name; 
+        if (event_id) filters.event_id = event_id; 
         if (is_junior !== undefined) filters.is_junior = is_junior === "true"; 
 
         // Fetch teams based on filters with their associated users
@@ -373,7 +371,7 @@ exports.getTeams = async (req, res) => {
                     attributes: ["id", "username", "email"], // Fetch only necessary fields
                 },
             ],
-            attributes: ["id", "team_name", "event_name", "is_junior"],
+            attributes: ["id", "team_name", "event_id", "is_junior"],
         });
 
         res.status(200).json({ status: "success", data: teams });

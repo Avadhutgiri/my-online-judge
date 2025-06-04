@@ -9,8 +9,12 @@ exports.registerUser = async (req, res) => {
         const { username, email, password, is_junior, event_id } = req.body;
 
         // Input validation
-        if (!username || !email || !password || is_junior === undefined || !event_id) {
+        if (!username || !email || !password || is_junior === undefined ) {
             return res.status(400).json({ error: 'All fields are required' });
+        }
+
+        if (req.body.role !== 'admin' && !req.body.event_id) {
+            return res.status(400).json({ error: 'Event ID is required for non-admin users' });
         }
 
         if (typeof password !== 'string' || password.length < 6) {

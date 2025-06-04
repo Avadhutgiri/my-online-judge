@@ -2,6 +2,8 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const Team = require('./Team');
 const Problem = require('./Problem');
+const Event = require('./Event'); // Add at the top
+
 
 const Submission = sequelize.define('Submission', {
     id: {

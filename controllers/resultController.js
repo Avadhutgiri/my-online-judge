@@ -1,43 +1,43 @@
-const e = require('express');
-const { Team, Problem, Submission } = require('../models');
+const { Team, Problem, Submission, Event } = require('../models');
 
 exports.getResult = async (req, res) => {
     try {
         const team_id = req.user.team_id;
-        console.log(req.user);
+
         // Fetch team details
         const team = await Team.findByPk(team_id, {
-            attributes: ['team_name', 'score', 'correct_submission', 'wrong_submission', 'is_junior', 'event_name']
+            attributes: ['id', 'team_name', 'score', 'correct_submission', 'wrong_submission', 'is_junior', 'event_id', 'first_solve_time'],
+            include: [{ model: Event, as: 'Event', attributes: ['name'] }]
         });
 
         if (!team) {
             return res.status(404).json({ error: 'Team not found' });
         }
 
-        const { event_name, is_junior } = team;
+        const { event_id, is_junior } = team;
 
-        // Fetch problems for the Team's event and category
+        // Fetch problems for the same event and category
         const problems = await Problem.findAll({
-            where: { event_name, is_junior },
+            where: { event_id, is_junior },
             attributes: ['id', 'score']
         });
 
-        // Fetch all Teams for the leaderboard in the same event and category
+        // Fetch all teams for this event and category
         const teams = await Team.findAll({
-            where: { event_name, is_junior },
+            where: { event_id, is_junior },
             attributes: ['id', 'team_name', 'score', 'correct_submission', 'wrong_submission', 'first_solve_time']
         });
 
-        // Sort the leaderboard (score descending, earliest solve time, fewer wrong submissions)
+        // Sort teams by total score, then earliest solve time, then fewer wrong submissions
         teams.sort((a, b) => {
             if (b.score !== a.score) return b.score - a.score;
-            if (a.first_solve_time && b.first_solve_time) return new Date(a.first_solve_time) - new Date(b.first_solve_time);
+            if (a.first_solve_time && b.first_solve_time)
+                return new Date(a.first_solve_time) - new Date(b.first_solve_time);
             return a.wrong_submission - b.wrong_submission;
         });
 
-        // Find the Team's rank
+        // Compute team rank
         const rank = teams.findIndex(t => t.id === team_id) + 1;
-
 
         // Calculate accuracy
         const totalSubmissions = team.correct_submission + team.wrong_submission;
@@ -49,7 +49,8 @@ exports.getResult = async (req, res) => {
                 id: team_id,
                 team_name: team.team_name,
                 total_score: team.score,
-                event_name,
+                event_id: team.event_id,
+                event_name: team.Event.name,
                 is_junior,
                 correct_submission: team.correct_submission,
                 wrong_submission: team.wrong_submission,
@@ -57,8 +58,9 @@ exports.getResult = async (req, res) => {
                 rank
             }
         });
+
     } catch (error) {
         console.error('Error fetching team result:', error);
         res.status(500).json({ error: 'Error fetching team data', details: error.message });
     }
-}
+};
