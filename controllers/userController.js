@@ -294,6 +294,15 @@ exports.Logout = async (req, res) => {
 exports.getAllEvents = async (req, res) => {
     try {
         const events = await Event.findAll();
+        const now = new Date();
+
+        // Update active status for ended events
+        for (const event of events) {
+            if (event.end_time && now > event.end_time) {
+                event.is_active = false;
+                await event.save();
+            }
+        }
         res.status(200).json({ events });
     } catch (error) {
         res.status(500).json({ error: 'Error fetching events', details: error.message });
