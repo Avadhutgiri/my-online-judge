@@ -79,7 +79,7 @@ services:
   worker:
     image: ${DOCKERHUB}/oj-worker:latest
     healthcheck:
-      test : ["CMD", "celery -A workers.tasks status || exit 1"]
+      test : ["CMD", "celery", "status"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -16,4 +16,5 @@ router.post('/registerTeam', userController.RegisterTeam);
 
 router.get('/logout', userController.Logout);
 
+router.get('/events', userController.getAllEvents);
 module.exports = router;

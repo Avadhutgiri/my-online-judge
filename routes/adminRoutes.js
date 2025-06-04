@@ -62,5 +62,5 @@ router.get("/submissions/team", adminAuthenticate, adminController.getSubmission
 
 router.get("/event/create", adminAuthenticate, adminController.createEvent);
 router.post("/event/start", adminAuthenticate, adminController.startEvent);
-
+router.post("/event/end", adminAuthenticate, adminController.endEvent);
 module.exports = router;

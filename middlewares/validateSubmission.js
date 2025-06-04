@@ -5,7 +5,6 @@ module.exports = async function validateSubmissionWindow(req, res, next) {
     try {
         const { problem_id } = req.body;
         const user_event_id = req.user.event_id;
-
         if (!problem_id) {
             return res.status(400).json({ error: 'problem_id is required' });
         }

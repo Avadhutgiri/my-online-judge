@@ -447,3 +447,17 @@ exports.startEvent = async (req, res) => {
       res.status(500).json({ error: 'Error starting event', details: error.message });
     }
 };
+
+exports.endEvent = async (req, res) => {
+    try{
+        const { eventId } = req.body;
+        const event = await Event.findByPk(eventId);
+        if (!event) return res.status(404).json({ error: 'Event not found' });
+        event.is_active = false;
+        await event.save();
+        res.status(200).json({ message: 'Event ended successfully', event });
+    }
+    catch(error){
+        res.status(500).json({ error: 'Error ending event', details: error.message });
+    }   
+};

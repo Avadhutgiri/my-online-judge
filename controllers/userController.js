@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { User, Team } = require("../models");
 require("dotenv").config();
-
+const Event = require("../models/Event");
 exports.registerUser = async (req, res) => {
     try {
         console.log(req.body); // Debug incoming request body
@@ -252,7 +252,6 @@ exports.Login = async (req, res) => {
         });
 
         console.log('Response headers:', res.getHeaders());
-
         return res.status(200).json({
             message: "User logged in successfully",
             user: {
