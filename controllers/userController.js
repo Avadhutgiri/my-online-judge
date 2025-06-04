@@ -37,12 +37,12 @@ exports.registerUser = async (req, res) => {
             return res.status(400).json({ error: 'Username must be between 3 and 20 characters' });
         }
 
-        const checkUser = await User.findOne({ where: { username, is_junior, event_id } });
+        const checkUser = await User.findOne({ where: { username, event_id } });
         if (checkUser) {
             return res.status(400).json({ error: 'Username already exists for this event and category' });
         }
 
-        const checkEmail = await User.findOne({ where: { email } });
+        const checkEmail = await User.findOne({ where: { email, event_id } });
         if (checkEmail) {
             return res.status(400).json({ error: 'Email already registered' });
         }
@@ -60,7 +60,7 @@ exports.registerUser = async (req, res) => {
 
         //  Now, create their solo team using their user ID
         const soloTeam = await Team.create({
-            team_name: `${username}_solo`,
+            team_name: `${username}_solo_${event_id}`,
             user1_id: newUser.id,  // Assign the user ID after creation
             user2_id: null,        // No second user
             event_id,

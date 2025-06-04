@@ -82,6 +82,7 @@ exports.getAllUsers = async (req, res) => {
                 "is_junior",
                 "role",
                 "created_at",
+                "event_id",
             ],
         });
         res.status(200).json(users);
