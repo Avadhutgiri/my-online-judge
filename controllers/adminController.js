@@ -115,7 +115,15 @@ exports.getAllTeams = async (req, res) => {
                     as: 'Users',
                     attributes: ['id', 'username', 'email']
                 }
+            ],
+            include: [
+                {
+                    model: Event,
+                    as: 'Event',
+                    attributes: ['id', 'name']
+                }
             ]
+            
         });
         res.status(200).json({ teams });
     } catch (error) {
