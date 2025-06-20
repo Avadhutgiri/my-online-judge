@@ -4,25 +4,28 @@ networks:
   judge_net:
 
 volumes:
-  # pgdata:
-  certbot-etc:
-  certbot-var:
+  pgdata:
+  # certbot-etc:
+  # certbot-var:
 
 services:
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    command: >
-      certonly --webroot -w /var/www/certbot --keep-until-expiring --email ${EMAIL} -d ${DOMAIN} --agree-tos 
+  # certbot:
+  #   image: certbot/certbot
+  #   container_name: certbot
+  #   volumes:
+  #     - ./certbot/conf:/etc/letsencrypt
+  #     - ./certbot/www:/var/www/certbot
+  #   command: >
+  #     certonly --webroot -w /var/www/certbot --keep-until-expiring --email ${EMAIL} -d ${DOMAIN} --agree-tos 
 
-    networks: [judge_net]
+  #   networks: [judge_net]
 
   # ───────────────────── BACKEND ─────────────────────
   backend:
-    image: ${DOCKERHUB}/oj-backend:latest
+    # image: ${DOCKERHUB}/oj-backend:latest
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: backend
     restart: always
     environment:
@@ -36,32 +39,34 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
-      # db:              { condition: service_healthy }
+      db:              { condition: service_healthy }
       redis:           { condition: service_healthy }
       worker:          { condition: service_started   }
     volumes:
       - .:/app:z
       - /app/node_modules
     working_dir: /app
-    command: node server.js     # production command
+    ports:
+      - "5000:5000"
+    command: nodemon server.js     # production command
     networks: [judge_net]
 
   # ───────────────────── DATABASE ────────────────────
-  # db:
-  #   image: postgres:14-alpine
-  #   container_name: db
-  #   restart: always
-  #   environment:
-  #     POSTGRES_USER: ${DB_USER}
-  #     POSTGRES_PASSWORD: ${DB_PASS}
-  #     POSTGRES_DB: ${DB_NAME}
-  #   volumes: [pgdata:/var/lib/postgresql/data]
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   networks: [judge_net]
+  db:
+    image: postgres:14-alpine
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [judge_net]
 
   # ───────────────────── REDIS ───────────────────────
   redis:
@@ -77,7 +82,11 @@ services:
 
   # ─────────────────── CELERY WORKER ─────────────────
   worker:
-    image: ${DOCKERHUB}/oj-worker:latest
+    # image: ${DOCKERHUB}/oj-worker:latest
+    build: 
+      context: ./workers
+      dockerfile: Dockerfile
+    container_name: celery-worker
     healthcheck:
       test : ["CMD", "celery", "status"]
       interval: 30s
@@ -93,7 +102,7 @@ services:
     working_dir: /app
     command: >
       celery -A workers.tasks worker
-            --loglevel=${LOG_LEVEL:-info}
+            --loglevel=DEBUG
             --concurrency=3
             --queues=submitQueue,runQueue,runSystemQueue
 
@@ -116,22 +125,25 @@ services:
 
 
   # ───────────────────── NGINX ───────────────────────
-  nginx:
-    image: nginx:alpine
-    container_name: nginx
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    networks: [judge_net]
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: nginx
+  #   restart: always
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
+  #     - ./certbot/conf:/etc/letsencrypt
+  #     - ./certbot/www:/var/www/certbot
+  #   networks: [judge_net]
 
   # ────────────────── CELERY API ──────────────────
   celery_api:
-    image: ${DOCKERHUB}/oj-worker:latest
+    # image: ${DOCKERHUB}/oj-worker:latest
+    build:  
+      context: ./workers
+      dockerfile: Dockerfile        
     container_name: celery-api
     restart: always
     command: python api_server.py

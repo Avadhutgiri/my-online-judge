@@ -158,6 +158,7 @@ exports.RegisterTeam = async (req, res) => {
 exports.Login = async (req, res) => {
     try {
         const { username, password, team_login, team_name, event_id } = req.body;
+        console.log("This is",req.body);
 
         // Input validation
         if (!username || !password || !event_id) {
@@ -243,12 +244,12 @@ exports.Login = async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,    // Prevents JavaScript access
-            secure: isSecure,  // Set via environment variable
-            sameSite: sameSite, // Set via environment variable
-            domain: domain,    // Set domain based on environment
-            path: '/',         // Cookie available for all paths
+            secure: true,  // Set via environment variable
+            sameSite: "None", // Set via environment variable
+            // domain: domain,    // Set domain based on environment
+            // path: '/',         // Cookie available for all paths
             maxAge: 2 * 60 * 60 * 1000, // 2 hours
-            credentials: 'include' // Required for cross-origin requests
+            // credentials: 'include' // Required for cross-origin requests
         });
 
         console.log('Response headers:', res.getHeaders());

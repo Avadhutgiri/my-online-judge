@@ -17,7 +17,9 @@ def decode(encoded_str):
 
 
 # base_dir = "/home/thefallenone/online-judge-backend/"
-base_dir = os.getenv('BASE_DIR', '/home/phoenix-heart/Online-judge/online-judge-backend')
+base_dir = os.getenv('BASE_DIR', '/home/phoenix-heart/Downloads/online-judge-backend')
+# BASE_DIR=/home/phoenix-heart/Downloads/online-judge-backend
+
 # Language configuration
 LANGUAGE_CONFIG = {
     "python": {
