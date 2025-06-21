@@ -9,8 +9,9 @@ function initSocket(server, options = {}) {
         console.log(`New client connected: ${socket.id}`);
 
         socket.on('subscribe', (submissionId) => {
-            console.log(`Client subscribed to submission ${submissionId}`);
-            socket.join(submissionId);
+            const roomId = String(submissionId);
+            socket.join(roomId);
+            console.log(`Client ${socket.id} joined room ${roomId}`);
         });
 
         socket.on('disconnect', () => {
