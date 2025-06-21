@@ -99,7 +99,7 @@ exports.SystemWebhook = async (req, res) => {
             submission_id,
             status,
             message,
-            
+            expected_output
         })
 
         res.status(200).json({ message: "System webhook processed successfully." });

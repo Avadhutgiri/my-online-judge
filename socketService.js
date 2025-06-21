@@ -1,17 +1,18 @@
+// socketService.js
 let ioInstance = null;
 
-function initSocket(server){
-    const { Server } = require('socket.io');
-    const io = new Server(server);
+function initSocket(server, options = {}) {
+    const { Server } = require("socket.io");
+    const io = new Server(server, options);
 
     io.on('connection', (socket) => {
-        console.log(`A New Client connected: ${socket.id}`);
+        console.log(`New client connected: ${socket.id}`);
 
-        socket.on('subscribe', (submissionId)=>{
-            console.log(`Client ${socket.id} subscribed to submission: ${submissionId}`);
-            socket.join(submissionId);
-
-        })
+        socket.on('subscribe', (submissionId) => {
+            const roomId = String(submissionId);
+            socket.join(roomId);
+            console.log(`Client ${socket.id} joined room ${roomId}`);
+        });
 
         socket.on('disconnect', () => {
             console.log(`Client disconnected: ${socket.id}`);
@@ -22,9 +23,9 @@ function initSocket(server){
     return io;
 }
 
-function getIO(){
-    if(!ioInstance){
-        throw new Error('Socket.io not initialized');
+function getIO() {
+    if (!ioInstance) {
+        throw new Error("Socket.io not initialized. Call initSocket(server) first.");
     }
     return ioInstance;
 }
