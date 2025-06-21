@@ -10,8 +10,10 @@ const pollingRoutes = require('./routes/pollingRoutes');
 const resultRoutes = require('./routes/resultRoutes');
 const { syncDB } = require('./models');
 const cookieParser = require('cookie-parser');
+const http = require('http');
+const { initSocket } = require('./socketService');
 require('dotenv').config();
-    
+
 const app = express();
 app.use(express.json());  // To handle JSON payloads
 app.use(cookieParser())
@@ -20,8 +22,8 @@ const cors = require("cors");
 
 // CORS configuration
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',') 
-    : ["http://localhost:5173", "http://localhost:3000"];
+? process.env.ALLOWED_ORIGINS.split(',') 
+: ["http://localhost:5173", "http://localhost:3000"];
 
 const corsOptions = {
     origin: allowedOrigins,
@@ -30,6 +32,8 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['set-cookie']
 };
+
+const server = http.createServer(app);
 
 app.use(cors(corsOptions));
 
@@ -66,6 +70,14 @@ app.use('/webhook', webHookRoutes);
 app.use('/polling', pollingRoutes);
 app.use('/result', resultRoutes);
 
-app.listen(PORT, () => {
+
+initSocket(server,{
+    cors: {
+        origin: allowedOrigins,
+        credentials: true,
+    }
+});
+
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

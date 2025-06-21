@@ -2,6 +2,7 @@ const Submission = require('../models/Submission');
 const Problem = require('../models/Problem');
 const User = require('../models/User');
 const Team = require('../models/Team');
+const { getIO } = require('../socketService');
 
 async function updateDatabase(submissionId, updateData) {
     console.log(`Updating database for submission ${submissionId}:`, updateData);
@@ -47,8 +48,6 @@ async function updateDatabase(submissionId, updateData) {
         }
 
         // Save updated records
-        await team.save();
-        submission.result = status;
         submission.result = status;
         if (failed_test_case) {
             submission.failed_test_case = failed_test_case;
@@ -57,7 +56,6 @@ async function updateDatabase(submissionId, updateData) {
             submission.message = message;
         }
         await team.save();
-
         await submission.save();
 
         console.log(`Database updated successfully for submission ${submissionId}.`);
@@ -71,13 +69,16 @@ exports.RunWebhook = async (req, res) => {
     try {
         const { submission_id, status, message, user_output } = req.body;
 
-        if (status === "executed_successfully") {
-            console.log(`Run Result: ${submission_id}`);
-            console.log(`User Output: ${user_output}`);
-        } else {
-            console.log(`Run Error: ${submission_id}`);
-            console.log(`Message: ${message}`);
-        }
+        console.log(`Run Webhook  for submission ${submission_id} - ${status}`);
+        if (status !== "executed_successfully") console.log(`Message: ${message}`);
+
+        getIO().to(String(submission_id)).emit('result',{
+            type: 'run',
+            submission_id,
+            status,
+            message,
+            user_output
+        });
 
         res.status(200).json({ message: "Run webhook processed successfully." });
     } catch (error) {
@@ -90,13 +91,16 @@ exports.SystemWebhook = async (req, res) => {
     try {
         const { submission_id, status, message, expected_output } = req.body;
 
-        if (status === "executed_successfully") {
-            console.log(`Run Result: ${submission_id}`);
-            console.log(`Expected Output: ${expected_output}`);
-        } else {
-            console.log(`Run Error: ${submission_id}`);
-            console.log(`Message: ${message}`);
-        }
+        console.log(`System Webhook for ${submission_id} — ${status}`);
+        if (status !== "executed_successfully") console.log(`Message: ${message}`);
+
+        getIO().to(String(submission_id)).emit('result', {
+            type: 'system',
+            submission_id,
+            status,
+            message,
+            
+        })
 
         res.status(200).json({ message: "System webhook processed successfully." });
     } catch (error) {
@@ -110,10 +114,8 @@ exports.SubmitWebhook = async (req, res) => {
     try {
         const { submission_id, status, message, failed_test_case } = req.body;
 
-        if (status === "Accepted") {
-            console.log(`Submission Accepted: ${submission_id}`);
-        } else {
-            console.log(`Submission Failed: ${submission_id}`);
+        console.log(`Submit Webhook for ${submission_id} — ${status}`);
+        if (status !== "Accepted") {
             console.log(`Failed Test Case: ${failed_test_case}`);
             console.log(`Message: ${message}`);
         }
@@ -123,6 +125,13 @@ exports.SubmitWebhook = async (req, res) => {
         if (dbResponse?.error) {
             return res.status(500).json({ message: dbResponse.error });
         }
+        getIO().to(String(submission_id)).emit('result', {
+            type: 'submit',
+            submission_id,
+            status,
+            message,
+            failed_test_case
+        });
 
         res.status(200).json({ message: "Submit webhook processed successfully." });
     } catch (error) {
