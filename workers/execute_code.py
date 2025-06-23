@@ -5,7 +5,18 @@ import logging
 import re
 import base64
 import time
+import redis
 
+r = redis.StrictRedis(host='redis', port=6379, decode_responses=True)
+
+def get_cached_testcases(problem_id):
+    count = int(r.get(f"problem:{problem_id}:count" or 0))
+    test_inputs = []
+    expected_outputs = []
+    for i in range(count):
+        test_inputs.append(r.get(f"problem:{problem_id}:input:{i}"))
+        expected_outputs.append(r.get(f"problem:{problem_id}:output:{i}"))
+    return test_inputs, expected_outputs
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -401,6 +412,7 @@ def runSystemcode(submission_id, problem_id, inputData=None):
 # Submit function
 def submit(submission_id, code, language, problem_id, input_path, java_classname=None):
     try:
+        start_time = time.time()
         result = {
             "status": "Accepted",
             "message": None,
@@ -440,17 +452,22 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
                 "message", "Compilation failed.")})
             return result
 
-        (test_case_paths, expected_output_paths), error = prepare_inputs_and_outputs(
-            input_path, work_dir
-        )
-        if error:
-            result.update({"status": "failed", "message": error["message"]})
+        test_inputs, expected_outputs = get_cached_testcases(problem_id)
+        if not test_inputs or not expected_outputs:
+            result.update({
+                "status": "failed",
+                "message": "Test cases not found in cache."
+            })
+
             return result
 
-        for i, (test_case, expected_output) in enumerate(
-            zip(test_case_paths, expected_output_paths)
-        ):
+        for i, (input_data, expected_output) in enumerate(zip(test_inputs, expected_outputs)):
+            input_file = os.path.join(work_dir, "inputs", f"input{i}.txt")
             output_file = os.path.join(work_dir, "outputs", f"output{i}.txt")
+
+            with open(input_file, "w") as f:
+                f.write(input_data)
+
             if language == "java":
                 run_cmd = config["run_command"].format(classname=classname)
             elif language == "cpp":
@@ -465,7 +482,7 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
                 submission_id,
                 work_dir,
                 run_cmd,
-                test_case,
+                input_file,
                 output_file,
                 config["image"],
                 config["timeout"],
@@ -506,15 +523,18 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
                 return result
 
             # ✅ Compare actual user output to expected output
-            with open(output_file, "r") as f_out, open(expected_output, "r") as f_exp:
+            with open(output_file, "r") as f_out:
                 user_output = f_out.read().strip()
-                expected = f_exp.read().strip()
-                if user_output != expected:
-                    result.update({
-                        "test_case": f"Test Case {i + 1}",
-                        "status": f"Wrong Answer on Test Case {i+1}",
-                    })
-                    return result  # ⬅️ Stop execution immediately if wrong answer
+
+            expected = expected_output.strip()
+            if user_output != expected:
+                result.update({
+                    "test_case": f"Test Case {i + 1}",
+                    "status": f"Wrong Answer on Test Case {i + 1}"
+                })
+                return result  # ⬅️ Stop execution immediately if wrong answer
+
+        logging.info(f"Total submission time: {time.time() - start_time:.4f} seconds")
 
         # If all test cases pass
         return result
