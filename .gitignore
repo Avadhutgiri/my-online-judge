@@ -11,8 +11,8 @@ workers/__pycache__/
 workers/try.py
 problems/
 workers/bench_submit.py
-workers/redis_benchmark_results.csv
-workers/disk_benchmark_results.csv
+redis_benchmark_results.csv
+disk_benchmark_results.csv
 docker-compose.yml
 .gitignore
 
