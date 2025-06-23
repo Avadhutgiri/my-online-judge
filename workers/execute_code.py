@@ -412,7 +412,6 @@ def runSystemcode(submission_id, problem_id, inputData=None):
 # Submit function
 def submit(submission_id, code, language, problem_id, input_path, java_classname=None):
     try:
-        start_time = time.time()
         result = {
             "status": "Accepted",
             "message": None,
@@ -458,7 +457,6 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
                 "status": "failed",
                 "message": "Test cases not found in cache."
             })
-
             return result
 
         for i, (input_data, expected_output) in enumerate(zip(test_inputs, expected_outputs)):
@@ -533,8 +531,6 @@ def submit(submission_id, code, language, problem_id, input_path, java_classname
                     "status": f"Wrong Answer on Test Case {i + 1}"
                 })
                 return result  # ⬅️ Stop execution immediately if wrong answer
-
-        logging.info(f"Total submission time: {time.time() - start_time:.4f} seconds")
 
         # If all test cases pass
         return result

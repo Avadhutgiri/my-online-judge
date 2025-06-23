@@ -10,6 +10,12 @@ test.py
 workers/__pycache__/
 workers/try.py
 problems/
+workers/bench_submit.py
+workers/redis_benchmark_results.csv
+workers/disk_benchmark_results.csv
+docker-compose.yml
+.gitignore
+
 
 # Ignore all Let's Encrypt certs and keys
 certbot/conf/archive/
