@@ -22,10 +22,10 @@ services:
 
   # ───────────────────── BACKEND ─────────────────────
   backend:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    # image: ${DOCKERHUB}/oj-backend:latest
+    # build: 
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: ${DOCKERHUB}/oj-backend:latest
     container_name: backend
     restart: always
     environment:
