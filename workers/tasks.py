@@ -31,24 +31,6 @@ app.conf.update(
     task_acks_late=True,
 )
 
-# ─── Redis Client for Temporary Run Result Caching ─────────────────────
-
-redis_client = Redis(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    db=0,
-    decode_responses=True,
-    socket_connect_timeout=5,
-    socket_timeout=5,
-)
-
-def store_run_result(submission_id, result):
-    """Temporarily store run/system result in Redis (TTL: 10 minutes)."""
-    try:
-        redis_client.setex(f"run_result:{submission_id}", 600, json.dumps(result))
-        print(f"[Redis] Stored result for {submission_id}")
-    except Exception as e:
-        print(f"[Redis] Error storing result: {e}")
 
 # ─── Utility Functions ──────────────────────────────────────────────────
 
@@ -112,7 +94,6 @@ def run_code(data):
         'user_output': result.get('user_output')
     }
 
-    store_run_result(data['submission_id'], webhook_data)
     send_webhook_result(WEBHOOK_URL_RUN, webhook_data)
 
 # ─── Task: Run System Code ──────────────────────────────────────────────
@@ -135,7 +116,6 @@ def run_system_code(data):
         'expected_output': result.get('expected_output')
     }
 
-    store_run_result(data['submission_id'], webhook_data)
     send_webhook_result(WEBHOOK_URL_SYSTEM, webhook_data)
 
 # ─── Health Check Task ──────────────────────────────────────────────────

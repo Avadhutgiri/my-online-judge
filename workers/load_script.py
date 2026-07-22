@@ -9,6 +9,7 @@ def preload_problem(problem_id, base_path="problems"):
     while True:
         input_file = os.path.join(problem_path, f"input{i}.txt")
         output_file = os.path.join(problem_path, f"output{i}.txt")
+        sol_file = os.path.join(problem_path, "solution.py")
 
         if not os.path.exists(input_file) or not os.path.exists(output_file):
             print(f"⛔ input{i}.txt or output{i}.txt not found for problem {problem_id}")
@@ -23,7 +24,11 @@ def preload_problem(problem_id, base_path="problems"):
             output_data = f_out.read().strip()
             print(f"✅ [READ] output{i}.txt = \"{output_data}\"")
             r.set(f"problem:{problem_id}:output:{i}", output_data)
-
+        if os.path.exists(sol_file):
+            with open(sol_file, "r") as f_sol:
+                sol_data = f_sol.read().strip()
+                print(f"✅ [READ] solution.py = \"{sol_data}\"")
+                r.set(f"problem:{problem_id}:solution", sol_data)
         i += 1
 
     r.set(f"problem:{problem_id}:count", i)

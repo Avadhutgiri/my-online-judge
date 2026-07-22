@@ -1,0 +1,149 @@
+services:
+  admin-frontend:
+    build:
+      context: ./../Online-judge-admin-frontend
+      dockerfile: Dockerfile
+    container_name: admin-frontend
+    restart: always
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    ports: 
+      - "3000:3000"
+    volumes:
+      - ./../Online-judge-admin-frontend:/app:z
+      - /app/node_modules
+    working_dir: /app
+    command: npm start 
+    networks: [judge_net]
+  
+  frontend:
+    build:
+      context: ./../Online-judge-frontend
+      dockerfile: Dockerfile
+    container_name: user-frontend
+    restart: always
+    environment:
+      - VITE_API_URL=http://localhost:5000/
+    ports: 
+      - "5173:5173"
+    volumes:
+      - ./../Online-judge-frontend:/app:z
+      - /app/node_modules
+    working_dir: /app
+    command: npm run dev --host
+    networks: [judge_net]
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend
+    restart: always
+    environment:
+      NODE_ENV: docker
+      JWT_SECRET: Howareyoumydeardarling
+      DB_HOST: db
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: online_judge
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      COOKIE_SECURE: true
+      COOKIE_SAME_SITE: None
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      worker: { condition: service_started }
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app:z
+      - /app/node_modules
+    working_dir: /app
+    command: node server.js
+    networks: [judge_net]
+
+  # Database (Postgres)
+  db:
+    image: postgres:14-alpine
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: online_judge
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d online_judge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [judge_net]
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [judge_net]
+
+  # Celery Worker
+  worker:
+    build:
+      context: ./workers
+      dockerfile: Dockerfile
+    container_name: worker
+    healthcheck:
+      test: ["CMD", "celery", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    depends_on:
+      redis: { condition: service_healthy }
+    volumes:
+      - ./workers:/app/workers:z
+      - ./problems:/app/problems:z
+      - ./submissions:/app/submissions:z
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app
+    command: >
+      celery -A workers.tasks worker
+      --loglevel=${LOG_LEVEL:-info}
+      --concurrency=3
+      --queues=submitQueue,runQueue,runSystemQueue
+    environment:
+      BASE_DIR: /home/bloodlust/online-judge/online-judge-backend
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BACKEND_HOST: backend
+      BACKEND_PORT: 5000
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    networks: [judge_net]
+
+  
+  # Celery API
+  celery_api:
+    build: { context: ./workers, dockerfile: Dockerfile }
+    container_name: celery-api
+    restart: always
+    command: python api_server.py
+    depends_on:
+      - redis
+    networks: [judge_net]
+
+networks:
+  judge_net:
+
+volumes:
+  pgdata:
+  # certbot-etc:
+  # certbot-var:

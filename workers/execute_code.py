@@ -30,6 +30,7 @@ def decode(encoded_str):
 # base_dir = "/home/thefallenone/online-judge-backend/"
 # base_dir = os.getenv('BASE_DIR', '/home/phoenix-heart/Online-judge/online-judge-backend')
 base_dir = os.getenv('BASE_DIR', '/home/phoenix-heart/Downloads/online-judge-backend')
+logging.info(f"Base directory set to: {base_dir}")
 # BASE_DIR=/home/phoenix-heart/Downloads/online-judge-backend
 
 # Language configuration
@@ -51,7 +52,7 @@ LANGUAGE_CONFIG = {
     },
     "java": {
         "extension": ".java",
-        "image": "openjdk:17-jdk-alpine",
+        "image": "openjdk:21-jdk",
         "compile_cmd": "javac {filename}",
         "run_command": "java {classname}",
         "timeout": 5,
@@ -67,6 +68,7 @@ def prepare_submission_directory(submission_id):
     os.makedirs(os.path.join(work_dir, "inputs"), exist_ok=True)
     os.makedirs(os.path.join(work_dir, "outputs"), exist_ok=True)
     os.makedirs(os.path.join(work_dir, "expected_outputs"), exist_ok=True)
+    logging.info(f"Prepared working directory at {work_dir}")
     return work_dir
 
 
@@ -119,6 +121,9 @@ def execute_code_in_docker(submission_id, work_dir, run_cmd, input_file, output_
     output_file_rel = os.path.relpath(output_file, work_dir)
     work_dir = os.path.join(base_dir, "submissions", f"submission_{submission_id}")
     container_name = f"submission_{submission_id}_runner"
+
+    logging.info(f"input_file_rel: {input_file_rel}, output_file_rel: {output_file_rel}")
+    logging.info(f"Working directory for Docker: {work_dir}")
 
     docker_cmd = [
         "docker", "run",
