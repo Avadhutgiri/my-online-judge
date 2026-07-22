@@ -43,7 +43,7 @@ app.use( cors( corsOptions ) );
     console.log( "Database synchronized" );
     
     await seedAdmin();
-    console.log( "Admin user seeded" );``
+    console.log( "Admin user seeded" );
 } )();
 
 

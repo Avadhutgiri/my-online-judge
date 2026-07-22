@@ -1,38 +1,28 @@
 services:
-  admin-frontend:
-    build:
-      context: ./../Online-judge-admin-frontend
-      dockerfile: Dockerfile
-    container_name: admin-frontend
+  certbot:
+      image: certbot/certbot
+      container_name: certbot
+      volumes:
+        - ./certbot/conf:/etc/letsencrypt
+        - ./certbot/www:/var/www/certbot
+      command: >
+        certonly --webroot -w /var/www/certbot --keep-until-expiring --email ${EMAIL} -d ${DOMAIN} --agree-tos 
+
+      networks: [judge_net]
+  
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
     restart: always
-    environment:
-      - VITE_API_URL=http://localhost:5000/api
-    ports: 
-      - "3000:3000"
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./../Online-judge-admin-frontend:/app:z
-      - /app/node_modules
-    working_dir: /app
-    command: npm start 
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     networks: [judge_net]
   
-  frontend:
-    build:
-      context: ./../Online-judge-frontend
-      dockerfile: Dockerfile
-    container_name: user-frontend
-    restart: always
-    environment:
-      - VITE_API_URL=http://localhost:5000/
-    ports: 
-      - "5173:5173"
-    volumes:
-      - ./../Online-judge-frontend:/app:z
-      - /app/node_modules
-    working_dir: /app
-    command: npm run dev --host
-    networks: [judge_net]
-
   backend:
     build:
       context: .
@@ -51,6 +41,9 @@ services:
       REDIS_PORT: 6379
       COOKIE_SECURE: true
       COOKIE_SAME_SITE: None
+      COOKIE_DOMAIN: onlinejudge.duckdns.org
+      ALLOWED_ORIGINS: https://onlinejudge.duckdns.org,http://localhost:5173,http://localhost:3000
+      FRONTEND_URL: https://onlinejudge.duckdns.org
     depends_on:
       db: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -97,7 +90,7 @@ services:
   # Celery Worker
   worker:
     build:
-      context: ./workers
+      context: ../workers
       dockerfile: Dockerfile
     container_name: worker
     healthcheck:
@@ -109,9 +102,9 @@ services:
     depends_on:
       redis: { condition: service_healthy }
     volumes:
-      - ./workers:/app/workers:z
-      - ./problems:/app/problems:z
-      - ./submissions:/app/submissions:z
+      - ../workers:/app/workers:z
+      - ../problems:/app/problems:z
+      - ../submissions:/app/submissions:z
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app
     command: >
@@ -132,7 +125,7 @@ services:
   
   # Celery API
   celery_api:
-    build: { context: ./workers, dockerfile: Dockerfile }
+    build: { context: ../workers, dockerfile: Dockerfile }
     container_name: celery-api
     restart: always
     command: python api_server.py
